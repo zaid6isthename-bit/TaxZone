@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { StitchWelcomeScreen, StitchClientHome, StitchDocuments, StitchFilingDetail, StitchNavBar } from "./phone-ui";
 
 const C = {
   primary: "#4F6EF7", primaryDark: "#2D4DD6", accent: "#22D3EE",
@@ -167,18 +168,7 @@ export default function TaxZone() {
   }
 
   function PhoneNav({ active }:{ active:string }) {
-    const items = [{id:"main-home",icon:"🏠",label:"Home"},{id:"main-docs",icon:"📄",label:"Docs"},{id:"main-filings",icon:"📋",label:"Filings"},{id:"alerts",icon:"🔔",label:"Alerts"},{id:"profile",icon:"👤",label:"Profile"}];
-    return (
-      <div style={{ display:"flex", borderTop:"1px solid rgba(255,255,255,0.08)", background:"#0d1420", flexShrink:0 }}>
-        {items.map(item => (
-          <button key={item.id} onClick={() => setPhoneScreen(item.id)}
-            style={{ flex:1, padding:"8px 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
-            <span style={{ fontSize:18 }}>{item.icon}</span>
-            <span style={{ fontSize:9, color:active===item.id ? C.primary : C.textDim, fontWeight:active===item.id?700:400 }}>{item.label}</span>
-          </button>
-        ))}
-      </div>
-    );
+    return <StitchNavBar active={active} setPhoneScreen={setPhoneScreen} />;
   }
 
   return (
@@ -196,33 +186,9 @@ export default function TaxZone() {
 
           <div style={{ flex:1, overflow:"hidden", display:"flex", flexDirection:"column", position:"relative" }}>
 
-            {/* SPLASH */}
-            {phoneScreen==="splash" && (
-              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"linear-gradient(160deg,#1a1f3e,#0d1a35)", gap:16 }}>
-                <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg,#4F6EF7,#22D3EE)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:36, boxShadow:"0 0 40px rgba(79,110,247,0.5)" }}>💼</div>
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ fontSize:28, fontWeight:800 }}>TaxZone</div>
-                  <div style={{ fontSize:13, color:C.textMuted, marginTop:4 }}>Your Tax, Simplified</div>
-                </div>
-                <div style={{ display:"flex", gap:6, marginTop:8 }}>
-                  {[0,1,2].map(i => <div key={i} style={{ width:i===0?20:6, height:6, borderRadius:3, background:i===0?C.primary:"rgba(255,255,255,0.2)" }} />)}
-                </div>
-              </div>
-            )}
-
-            {/* WELCOME */}
-            {phoneScreen==="welcome" && (
-              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"linear-gradient(160deg,#1a1f3e,#0d1a35)", padding:24, gap:20 }}>
-                <div style={{ width:100, height:100, borderRadius:30, background:"linear-gradient(135deg,#4F6EF7,#22D3EE)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:48, boxShadow:"0 0 60px rgba(79,110,247,0.4)" }}>💼</div>
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ fontSize:30, fontWeight:800 }}>TaxZone</div>
-                  <div style={{ fontSize:13, color:C.textMuted, marginTop:8, lineHeight:1.6 }}>File taxes smarter. Get expert help. Stay compliant.</div>
-                </div>
-                <div style={{ width:"100%", display:"flex", flexDirection:"column", gap:10 }}>
-                  <button onClick={() => setPhoneScreen("login")} style={{ ...btn("linear-gradient(135deg,#4F6EF7,#2D4DD6)"), justifyContent:"center", padding:"14px", borderRadius:14, fontSize:15, width:"100%" }}>Get Started</button>
-                  <button onClick={() => setPhoneScreen("login")} style={{ ...btn("transparent"), justifyContent:"center", padding:"14px", borderRadius:14, fontSize:15, width:"100%", border:"1px solid rgba(255,255,255,0.15)" }}>Login</button>
-                </div>
-              </div>
+            {/* SPLASH & WELCOME */}
+            {(phoneScreen==="splash" || phoneScreen==="welcome") && (
+              <StitchWelcomeScreen onLogin={() => setPhoneScreen("login")} />
             )}
 
             {/* LOGIN */}
@@ -261,56 +227,15 @@ export default function TaxZone() {
 
             {/* MAIN HOME */}
             {phoneScreen==="main-home" && (
-              <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background:"#111827" }}>
-                {/* Header */}
-                <div style={{ padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
-                  <div>
-                    <div style={{ fontSize:11, color:C.textMuted }}>Good morning,</div>
-                    <div style={{ fontSize:16, fontWeight:700 }}>Arjun Mehta 👋</div>
-                  </div>
-                  <div style={{ display:"flex", gap:8 }}>
-                    <button onClick={() => { setShowNotifOverlay(true); setShowProfileOverlay(false); }}
-                      style={{ position:"relative", background:"rgba(255,255,255,0.08)", border:"none", borderRadius:10, width:36, height:36, cursor:"pointer", fontSize:16 }}>
-                      🔔
-                      {unreadNotifs>0 && <span style={{ position:"absolute", top:4, right:4, width:8, height:8, background:C.danger, borderRadius:"50%", display:"block" }} />}
-                    </button>
-                    <button onClick={() => { setShowProfileOverlay(true); setShowNotifOverlay(false); }}
-                      style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#4F6EF7,#22D3EE)", border:"none", cursor:"pointer", fontSize:13, fontWeight:700, color:"#fff" }}>AM</button>
-                  </div>
-                </div>
-                {/* Scrollable */}
-                <div style={{ flex:1, overflowY:"auto", padding:"0 16px 16px" }}>
-                  <div style={{ background:"linear-gradient(135deg,#4F6EF7,#2D4DD6)", borderRadius:16, padding:16, marginBottom:16 }}>
-                    <div style={{ fontSize:12, opacity:0.8 }}>Pending Actions</div>
-                    <div style={{ fontSize:28, fontWeight:800, marginTop:4 }}>2</div>
-                    <div style={{ fontSize:12, opacity:0.8 }}>Documents awaiting upload</div>
-                    <button onClick={() => setPhoneScreen("main-docs")} style={{ marginTop:10, background:"rgba(255,255,255,0.2)", border:"none", borderRadius:8, padding:"6px 12px", color:"#fff", fontSize:12, cursor:"pointer" }}>View Documents →</button>
-                  </div>
-                  <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:10, letterSpacing:1, textTransform:"uppercase" }}>Active Filings</div>
-                  {activeClient.filings.map(f => (
-                    <div key={f.id} onClick={() => { setActiveFilingId(f.id); setPhoneScreen("filing-detail"); }} style={{ ...card, marginBottom:10, cursor:"pointer" }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-                        <div style={{ fontSize:13, fontWeight:600, flex:1, paddingRight:8 }}>{f.name}</div>
-                        <StatusPill status={f.status} />
-                      </div>
-                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.textMuted }}>
-                        <span>{f.type}</span><span>Due: {f.deadline}</span>
-                      </div>
-                      <div style={{ display:"flex", gap:3, marginTop:8 }}>
-                        {STAGES.map((_,i) => <div key={i} style={{ flex:1, height:3, borderRadius:2, background:i<f.stage?C.primary:"rgba(255,255,255,0.1)" }} />)}
-                      </div>
-                    </div>
-                  ))}
-                  <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, margin:"14px 0 10px", letterSpacing:1, textTransform:"uppercase" }}>Your Specialist</div>
-                  <div style={{ ...card, display:"flex", alignItems:"center", gap:12 }}>
-                    <div style={{ width:44, height:44, borderRadius:14, background:"linear-gradient(135deg,#10B981,#22D3EE)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, flexShrink:0 }}>PN</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14, fontWeight:600 }}>Priya Nair</div>
-                      <div style={{ fontSize:11, color:C.textMuted }}>Senior Tax Specialist</div>
-                    </div>
-                    <button onClick={() => setPhoneScreen("support-chat")} style={{ background:C.primary+"22", border:"none", borderRadius:10, width:36, height:36, cursor:"pointer", fontSize:18 }}>💬</button>
-                  </div>
-                </div>
+              <>
+                <StitchClientHome 
+                  onViewDocuments={() => setPhoneScreen("main-docs")}
+                  onViewFiling={(id) => { setActiveFilingId(id); setPhoneScreen("filing-detail"); }}
+                  onToggleNotifs={() => setShowNotifOverlay(!showNotifOverlay)}
+                  unreadCount={unreadNotifs}
+                />
+                <PhoneNav active="main-home" />
+                
                 {/* Notif overlay */}
                 {showNotifOverlay && (
                   <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)", zIndex:20 }} onClick={() => setShowNotifOverlay(false)}>
@@ -356,36 +281,18 @@ export default function TaxZone() {
                     </div>
                   </div>
                 )}
-                <PhoneNav active="main-home" />
-              </div>
+              </>
             )}
 
             {/* DOCUMENTS */}
             {phoneScreen==="main-docs" && (
-              <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background:"#111827" }}>
-                <PhoneHeader title="Documents" onBack={() => setPhoneScreen("main-home")} />
-                <div style={{ flex:1, overflowY:"auto", padding:16 }}>
-                  <div style={{ display:"flex", gap:8, marginBottom:14, overflowX:"auto" }}>
-                    {["All","Pending","Uploaded","Approved"].map(c => (
-                      <button key={c} style={{ background:c==="All"?C.primary:"rgba(255,255,255,0.08)", border:"none", borderRadius:20, padding:"5px 12px", color:"#fff", fontSize:12, cursor:"pointer", flexShrink:0 }}>{c}</button>
-                    ))}
-                  </div>
-                  {activeClient.filings.flatMap(f => f.docs.map(d => ({ ...d, filingName:f.name, filingId:f.id }))).map(doc => (
-                    <div key={doc.id} style={{ ...card, marginBottom:10 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                        <div style={{ fontSize:14, fontWeight:600 }}>{doc.name}</div>
-                        <StatusPill status={doc.status} />
-                      </div>
-                      <div style={{ fontSize:11, color:C.textMuted, marginBottom:8 }}>{doc.filingName}</div>
-                      {doc.status==="Pending" && (
-                        <button onClick={() => setUploadedDoc(doc.name)} style={{ ...btn(C.primary), fontSize:12, padding:"7px 12px" }}>📤 Upload</button>
-                      )}
-                      {uploadedDoc===doc.name && <div style={{ marginTop:6, fontSize:11, color:C.success }}>✅ Uploaded successfully!</div>}
-                    </div>
-                  ))}
-                </div>
+              <>
+                <StitchDocuments onUpload={() => {
+                  const docs = activeClient.filings.flatMap(f => f.docs).filter(d => d.status === "Pending");
+                  if (docs.length > 0) setUploadedDoc(docs[0].name);
+                }} />
                 <PhoneNav active="main-docs" />
-              </div>
+              </>
             )}
 
             {/* FILINGS */}
@@ -419,85 +326,11 @@ export default function TaxZone() {
 
             {/* FILING DETAIL */}
             {phoneScreen==="filing-detail" && activeFiling && (
-              <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background:"#111827" }}>
-                <div style={{ padding:"12px 16px", display:"flex", alignItems:"center", gap:10, borderBottom:"1px solid rgba(255,255,255,0.07)", flexShrink:0 }}>
-                  <button onClick={() => setPhoneScreen("main-filings")} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:8, width:32, height:32, color:"#fff", cursor:"pointer", fontSize:16 }}>←</button>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:14, fontWeight:700 }}>{activeFiling.name}</div>
-                    <div style={{ fontSize:11, color:C.textMuted }}>{activeFiling.type}</div>
-                  </div>
-                  <StatusPill status={activeFiling.status} />
-                </div>
-                <div style={{ flex:1, overflowY:"auto", padding:16 }}>
-                  {/* Stage tracker */}
-                  <div style={{ ...card, marginBottom:14 }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:12, textTransform:"uppercase", letterSpacing:1 }}>Progress</div>
-                    <div style={{ display:"flex" }}>
-                      {STAGES.map((s,i) => (
-                        <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center" }}>
-                          <div style={{ width:"100%", display:"flex", alignItems:"center" }}>
-                            {i>0 && <div style={{ flex:1, height:2, background:i<activeFiling.stage?C.primary:"rgba(255,255,255,0.1)" }} />}
-                            <div style={{ width:24, height:24, borderRadius:"50%", background:i<activeFiling.stage?C.primary:"rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, flexShrink:0 }}>{i<activeFiling.stage?"✓":i+1}</div>
-                            {i<STAGES.length-1 && <div style={{ flex:1, height:2, background:i+1<activeFiling.stage?C.primary:"rgba(255,255,255,0.1)" }} />}
-                          </div>
-                          <div style={{ fontSize:9, color:i<activeFiling.stage?C.primary:C.textDim, marginTop:4, textAlign:"center" }}>{s}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Details grid */}
-                  <div style={{ ...card, marginBottom:14 }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>Filing Details</div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                      {[{l:"Amount",v:activeFiling.amount},{l:"Deadline",v:activeFiling.deadline},{l:"PAN",v:activeClient.pan},{l:"Docs",v:`${activeFiling.docs.filter(d=>d.status==="Approved").length}/${activeFiling.docs.length} OK`}].map(item => (
-                        <div key={item.l} style={{ background:"rgba(255,255,255,0.04)", borderRadius:8, padding:10 }}>
-                          <div style={{ fontSize:10, color:C.textMuted }}>{item.l}</div>
-                          <div style={{ fontSize:13, fontWeight:700, marginTop:2 }}>{item.v}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Documents */}
-                  <div style={{ ...card, marginBottom:14 }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>Documents</div>
-                    {activeFiling.docs.map(doc => (
-                      <div key={doc.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}><span>📄</span><span style={{ fontSize:13 }}>{doc.name}</span></div>
-                        <StatusPill status={doc.status} />
-                      </div>
-                    ))}
-                  </div>
-                  {/* Action buttons */}
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
-                    <button onClick={downloadDraft} style={{ background:"rgba(16,185,129,0.12)", border:"1px solid rgba(16,185,129,0.25)", borderRadius:14, padding:"14px 10px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-                      <span style={{ fontSize:24 }}>⬇️</span>
-                      <span style={{ fontSize:11, fontWeight:700, color:C.success }}>Download Draft</span>
-                    </button>
-                    <button onClick={() => setPhoneScreen("support-chat")} style={{ background:"rgba(79,110,247,0.12)", border:"1px solid rgba(79,110,247,0.25)", borderRadius:14, padding:"14px 10px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-                      <span style={{ fontSize:24 }}>💬</span>
-                      <span style={{ fontSize:11, fontWeight:700, color:C.primary }}>Support Chat</span>
-                    </button>
-                  </div>
-                  {/* Timeline */}
-                  <div style={{ ...card }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>Timeline</div>
-                    {[
-                      { icon:"🚀", text:"Filing initiated", date:"1 Apr 2025", done:true },
-                      { icon:"📤", text:"Documents requested", date:"5 Apr 2025", done:true },
-                      { icon:"🔍", text:"Review in progress", date:"20 Apr 2025", done:activeFiling.stage>=3 },
-                      { icon:"🏁", text:"Filed with department", date:"31 Jul 2025", done:activeFiling.stage>=4 },
-                    ].map((t,i) => (
-                      <div key={i} style={{ display:"flex", gap:10, padding:"8px 0", opacity:t.done?1:0.4 }}>
-                        <span style={{ fontSize:16 }}>{t.icon}</span>
-                        <div>
-                          <div style={{ fontSize:12, fontWeight:600 }}>{t.text}</div>
-                          <div style={{ fontSize:10, color:C.textMuted }}>{t.date}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <StitchFilingDetail 
+                onBack={() => setPhoneScreen("main-filings")}
+                onDownloadDraft={downloadDraft}
+                onSupportChat={() => setPhoneScreen("support-chat")}
+              />
             )}
 
             {/* SUPPORT CHAT */}
