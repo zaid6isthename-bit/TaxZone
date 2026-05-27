@@ -172,13 +172,13 @@ export default function TaxZone() {
   }
 
   return (
-    <div style={{ display:"flex", width:"100vw", height:"100vh", background:"linear-gradient(135deg,#0a0f1e 0%,#0d1a35 60%,#0a1628 100%)", overflow:"hidden" }}>
+    <div className="flex w-screen h-screen overflow-hidden" style={{ background:"linear-gradient(135deg,#0a0f1e 0%,#0d1a35 60%,#0a1628 100%)" }}>
 
       {/* ══ LEFT: Phone Emulator ══ */}
-      <div style={{ width:370, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", padding:20, borderRight:"1px solid rgba(255,255,255,0.06)" }}>
-        <div style={{ width:330, height:"calc(100vh - 40px)", maxHeight:720, background:"#111827", borderRadius:40, boxShadow:"0 0 0 2px #374151, 0 0 60px rgba(79,110,247,0.25)", overflow:"hidden", display:"flex", flexDirection:"column" }}>
+      <div className="w-full md:w-[370px] shrink-0 flex items-center justify-center md:p-5 md:border-r border-white/5">
+        <div className="w-full h-full md:w-[330px] md:h-[calc(100vh-40px)] md:max-h-[720px] bg-[#111827] md:rounded-[40px] md:shadow-[0_0_0_2px_#374151,0_0_60px_rgba(79,110,247,0.25)] overflow-hidden flex flex-col">
           {/* Status bar */}
-          <div style={{ height:28, background:"#0d1420", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 20px", fontSize:11, color:C.textMuted, flexShrink:0 }}>
+          <div className="hidden md:flex items-center justify-between px-5 text-[11px] shrink-0" style={{ height:28, background:"#0d1420", color:C.textMuted }}>
             <span>9:41</span>
             <div style={{ width:60, height:10, background:"#1f2937", borderRadius:10 }} />
             <span>WiFi ▐▐</span>
@@ -444,7 +444,7 @@ export default function TaxZone() {
       </div>
 
       {/* ══ RIGHT: Web Console ══ */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <div className="hidden md:flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
         <div style={{ height:60, borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", padding:"0 24px", gap:16, flexShrink:0, background:"rgba(255,255,255,0.02)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginRight:8 }}>
