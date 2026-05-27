@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TaxZone</string>
+    <string name="title_activity_main">TaxZone</string>
+    <string name="package_name">com.taxzone.app</string>
+    <string name="custom_url_scheme">com.taxzone.app</string>
+</resources>
