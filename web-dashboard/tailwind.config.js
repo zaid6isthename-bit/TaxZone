@@ -1,6 +1,5 @@
-import type { Config } from "tailwindcss";
-
-export default {
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -68,12 +67,12 @@ export default {
           "active-text": "#1A4FBA",
           text: "#4B5563",
           border: "#E5E7EB",
-        }
+        },
       },
       fontFamily: {
-        display: ['"Plus Jakarta Sans"', 'sans-serif'],
-        body: ['"DM Sans"', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'monospace'],
+        display: ['"Plus Jakarta Sans"', "sans-serif"],
+        body: ['"DM Sans"', "sans-serif"],
+        mono: ['"IBM Plex Mono"', "monospace"],
       },
       fontSize: {
         "text-xs": ["11px", { lineHeight: "1.4" }],
@@ -124,8 +123,8 @@ export default {
         decelerate: "cubic-bezier(0, 0, 0.2, 1)",
         accelerate: "cubic-bezier(0.4, 0, 1, 1)",
         spring: "cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-      }
+      },
     },
   },
   plugins: [],
-} satisfies Config;
+};
