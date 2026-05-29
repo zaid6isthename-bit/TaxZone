@@ -5,7 +5,7 @@ import {
   Users, UserCheck, FileText, CalendarClock,
   AlertTriangle, Trophy, TrendingUp, TrendingDown,
   ArrowUpRight, ArrowDownRight, MoreVertical,
-  ChevronRight
+  ChevronRight, Clock
 } from "lucide-react";
 import { TZCard } from "@/components/ui/card";
 import { TZStatusBadge } from "@/components/ui/status-badge";
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
                   dataKey="count"
                   stroke="none"
                 >
-                  {data.statusDistribution.map((entry, index) => (
+                  {data.statusDistribution.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status as keyof typeof STATUS_COLORS]} />
                   ))}
                 </Pie>
@@ -183,7 +183,7 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-2 gap-3 mt-6">
-            {data.statusDistribution.map((entry) => (
+            {data.statusDistribution.map((entry: any) => (
               <div key={entry.status} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_COLORS[entry.status] }} />
                 <span className="text-[11px] font-bold text-gray-600 uppercase tracking-tighter truncate">{entry.status.replace('_', ' ')}</span>

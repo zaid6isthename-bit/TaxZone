@@ -72,8 +72,8 @@ export default function ClientsPage() {
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <TZAvatar 
-                      fallback={client.name.substring(0, 2)} 
-                      className="w-8 h-8 text-xs bg-brand-primary-light text-brand-primary" 
+                      name={client.name}
+                      size="sm"
                     />
                     <span className="font-medium text-gray-900">{client.name}</span>
                   </div>

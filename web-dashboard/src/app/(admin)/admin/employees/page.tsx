@@ -60,7 +60,7 @@ export default function AdminEmployeesPage() {
               <TableRow key={emp.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <TZAvatar fallback={emp.name.substring(0,2)} className="bg-accent-indigo-light text-accent-indigo" />
+                    <TZAvatar name={emp.name} size="sm" />
                     <div>
                       <p className="font-medium text-gray-900">{emp.name}</p>
                       <p className="text-xs text-gray-500">{emp.id}</p>
@@ -80,7 +80,7 @@ export default function AdminEmployeesPage() {
                   </TZBadge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <TZButton variant="ghost" size="icon" className="h-8 w-8 text-gray-400">
+                  <TZButton variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400">
                     <MoreHorizontal size={18} />
                   </TZButton>
                 </TableCell>

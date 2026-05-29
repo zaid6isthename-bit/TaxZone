@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { TZAvatar } from "@/components/ui/avatar";
 import { useAuthStore } from "@/lib/store";
+import { TZButton } from "@/components/ui/button";
 
 const ADMIN_NAV_ITEMS = [
   { label: 'Overview',   href: '/admin',  icon: LayoutDashboard },

@@ -105,8 +105,8 @@ export default function TasksPage() {
                       <span>Due {task.due}</span>
                     </div>
                     <TZAvatar
-                      fallback={task.assignee}
-                      className="w-7 h-7 text-[10px] bg-brand-primary-light text-brand-primary"
+                      name={task.assignee}
+                      size="xs"
                     />
                   </div>
                 </TZCard>

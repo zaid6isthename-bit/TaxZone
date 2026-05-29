@@ -52,9 +52,6 @@ export function BottomNav() {
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
-              {!isBell && isActive && (
-                <div className="absolute -bottom-1 w-1 h-1 bg-brand-primary rounded-full animate-fade-in" />
-              )}
             </div>
 
             {/* Label */}

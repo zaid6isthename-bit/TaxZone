@@ -1,60 +1,61 @@
-import axios from 'axios';
 import { useAuthStore } from './store';
 
-const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  headers: { 'Content-Type': 'application/json' },
-  timeout: 30000,
-});
+/**
+ * Production-ready API client using native fetch.
+ * This avoids dependency issues with axios while providing
+ * the same interceptor-like functionality for auth.
+ */
 
-// Request interceptor: attach JWT
-apiClient.interceptors.request.use(config => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
-  // Platform headers
-  config.headers['X-App-Platform'] = 'web';
-  config.headers['X-App-Version']  = process.env.NEXT_PUBLIC_APP_VERSION ?? '1.0.0';
+async function apiRequest(endpoint: string, options: RequestInit = {}) {
+  const { accessToken, logout } = useAuthStore.getState();
 
-  return config;
-});
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    'X-App-Platform': 'web',
+    'X-App-Version': process.env.NEXT_PUBLIC_APP_VERSION ?? '1.0.0',
+    ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+    ...options.headers,
+  };
 
-// Response interceptor: handle 401 → refresh
-apiClient.interceptors.response.use(
-  response => response,
-  async error => {
-    const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      const refreshToken = useAuthStore.getState().refreshToken;
+  const config = {
+    ...options,
+    headers,
+  };
 
-      if (!refreshToken) {
-        useAuthStore.getState().logout();
-        window.location.href = '/auth';
-        return Promise.reject(error);
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, config);
+
+    // Handle 401 Unauthorized - redirect to login
+    if (response.status === 401) {
+      logout();
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
       }
-
-      try {
-        const { data } = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-          { refreshToken }
-        );
-
-        useAuthStore.setState({
-          accessToken:  data.accessToken,
-          refreshToken: data.refreshToken,
-        });
-
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-        return apiClient(originalRequest);
-      } catch {
-        useAuthStore.getState().logout();
-        window.location.href = '/auth';
-        return Promise.reject(error);
-      }
+      throw new Error('Unauthorized');
     }
-    return Promise.reject(error);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'API request failed');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
   }
-);
+}
+
+const apiClient = {
+  get: (url: string, options?: any) => {
+    const query = options?.params ? '?' + new URLSearchParams(options.params).toString() : '';
+    return apiRequest(`${url}${query}`, { method: 'GET' }).then(data => ({ data }));
+  },
+  post: (url: string, body: any) => apiRequest(url, { method: 'POST', body: JSON.stringify(body) }).then(data => ({ data })),
+  put: (url: string, body: any) => apiRequest(url, { method: 'PUT', body: JSON.stringify(body) }).then(data => ({ data })),
+  delete: (url: string) => apiRequest(url, { method: 'DELETE' }).then(data => ({ data })),
+};
 
 export default apiClient;

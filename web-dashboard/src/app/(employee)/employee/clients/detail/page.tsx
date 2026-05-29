@@ -17,7 +17,7 @@ export default function ClientDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <TZAvatar fallback="RK" className="w-16 h-16 text-xl bg-brand-primary-light text-brand-primary" />
+          <TZAvatar name="Rajesh Kumar" size="xl" />
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold font-display text-gray-900">Rajesh Kumar</h1>
