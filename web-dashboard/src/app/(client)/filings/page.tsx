@@ -104,7 +104,7 @@ export default function FilingsPage() {
             <FilingCard
               key={filing.id}
               filing={filing}
-              onClick={() => router.push(`/filings/${filing.id}`)}
+              onClick={() => router.push(`/filings/details?id=${filing.id}`)}
             />
           ))
         ) : (

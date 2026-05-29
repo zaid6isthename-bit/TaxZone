@@ -66,7 +66,7 @@ export default function NotificationsPage() {
           Array(6).fill(0).map((_, i) => <TZSkeleton key={i} className="h-24 w-full rounded-xl" />)
         ) : displayNotifications.length > 0 ? (
           displayNotifications.map((n: any) => (
-            <NotificationItem key={n.id} n={n} onClick={() => n.filingId && router.push(`/filings/${n.filingId}`)} />
+            <NotificationItem key={n.id} n={n} onClick={() => n.filingId && router.push(`/filings/details?id=${n.filingId}`)} />
           ))
         ) : (
           <TZEmptyState

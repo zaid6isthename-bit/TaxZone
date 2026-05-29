@@ -144,7 +144,7 @@ export default function ClientDashboard() {
               key={filing.id}
               interactive
               className="min-w-[240px] p-5 flex-shrink-0"
-              onClick={() => router.push(`/filings/${filing.id}`)}
+              onClick={() => router.push(`/filings/details?id=${filing.id}`)}
             >
               <div className="flex flex-col h-full">
                 <div className="flex justify-between items-start mb-3">

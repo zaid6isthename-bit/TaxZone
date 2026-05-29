@@ -9,7 +9,7 @@ import {
 import { TZCard } from "@/components/ui/card";
 import { TZStatusBadge } from "@/components/ui/status-badge";
 import { TZSkeleton } from "@/components/ui/skeleton";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -22,10 +22,6 @@ const FILING_STEPS = [
   { key: 'filed',                  label: 'Filed'         },
   { key: 'completed',              label: 'Done'          },
 ];
-
-export function generateStaticParams() {
-  return []; // We fetch dynamically on client
-}
 
 const STATUS_HERO_COLORS: Record<string, string> = {
   not_started:          'from-gray-500 to-gray-600',
@@ -43,17 +39,18 @@ const STATUS_HERO_COLORS: Record<string, string> = {
 
 export default function FilingDetailPage() {
   const router = useRouter();
-  const params = useParams();
+  const searchParams = useSearchParams();
+  const id = searchParams?.get('id');
   const [isUploadSheetOpen, setUploadSheetOpen] = useState(false);
 
   const { data: filing, isLoading } = useQuery({
-    queryKey: ['filing', params?.id],
-    enabled: !!params?.id,
+    queryKey: ['filing', id],
+    enabled: !!id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('filings')
         .select('*, documents(*), users:assigned_ca_id(name)')
-        .eq('id', params!.id)
+        .eq('id', id!)
         .single();
         
       if (error) throw error;
