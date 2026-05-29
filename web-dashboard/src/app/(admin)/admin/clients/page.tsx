@@ -12,7 +12,7 @@ import { TZStatusBadge } from "@/components/ui/status-badge";
 import { TZSkeleton } from "@/components/ui/skeleton";
 import { TZAvatar } from "@/components/ui/avatar";
 import { TZButton } from "@/components/ui/button";
-import apiClient from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import * as Tabs from "@radix-ui/react-tabs";
 
@@ -22,15 +22,36 @@ export default function AdminClientsPage() {
 
   const { data: clients, isLoading } = useQuery({
     queryKey: ['admin-clients', search],
-    queryFn: () => apiClient.get('/admin/clients', { params: { search } }).then(r => r.data),
+    queryFn: async () => {
+      let query = supabase
+        .from('users')
+        .select('id, name, phone, email, business_name, gstin, role, created_at')
+        .eq('role', 'client');
+
+      if (search) {
+        query = query.or(`name.ilike.%${search}%,gstin.ilike.%${search}%,phone.ilike.%${search}%`);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) throw error;
+
+      return data.map((u: any) => ({
+        id: u.id,
+        name: u.name,
+        type: u.business_name ? 'Corporate' : 'Individual',
+        gstin: u.gstin,
+        phone: u.phone,
+        email: u.email,
+        assignee: 'Unassigned',
+        status: 'not_started',
+        department: 'Income Tax',
+        activeFilings: 0,
+        lastActivity: u.created_at,
+      }));
+    },
   });
 
-  const displayClients = clients || [
-    { id: "CL-001", name: "Rajesh Kumar", type: "Individual", gstin: "27AAAAA0000A1Z5", phone: "+91 98765 43210", assignee: "Priya Sharma", status: "completed", department: "Income Tax", activeFilings: 2, lastActivity: "2024-10-29T10:00:00Z" },
-    { id: "CL-002", name: "Acme Corp Ltd", type: "Corporate", gstin: "27BBBBB1111B2Z6", phone: "+91 98888 77777", assignee: "Amit Patel", status: "underReview", department: "GST", activeFilings: 5, lastActivity: "2024-10-28T14:30:00Z" },
-    { id: "CL-003", name: "TechNova Solutions", type: "Corporate", gstin: "27CCCCC2222C3Z7", phone: "+91 95555 44444", assignee: "Unassigned", status: "not_started", department: "Audit", activeFilings: 1, lastActivity: "2024-10-25T09:15:00Z" },
-    { id: "CL-004", name: "Sunil Desai", type: "Individual", gstin: null, phone: "+91 92222 11111", assignee: "Priya Sharma", status: "in_progress", department: "Income Tax", activeFilings: 3, lastActivity: "2024-10-20T11:00:00Z" },
-  ];
+  const displayClients = clients || [];
 
   const selectedClient = displayClients.find((c: any) => c.id === selectedClientId);
 

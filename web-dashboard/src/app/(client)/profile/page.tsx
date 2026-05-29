@@ -54,17 +54,17 @@ export default function ProfilePage() {
 
         <div className="flex items-center gap-5 relative z-10">
           <div className="relative group">
-            <TZAvatar name={user?.name || "Rajesh Kumar"} size="xl" className="ring-4 ring-white/20 shadow-xl transition-transform duration-300 group-hover:scale-105" />
+            <TZAvatar name={user?.name || "Client"} size="xl" className="ring-4 ring-white/20 shadow-xl transition-transform duration-300 group-hover:scale-105" />
             <button className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg border border-gray-100 transition-all active:scale-90">
               <Camera className="w-4 h-4 text-brand-primary" />
             </button>
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white font-display tracking-tight leading-tight">
-              {user?.name || "Rajesh Kumar"}
+              {user?.name || "Client"}
             </h1>
             <p className="text-white/70 text-sm font-medium font-body mt-0.5">
-              {user?.businessName || "Individual Client"}
+              {user?.businessName || "Individual"}
             </p>
             {user?.gstin && (
               <div className="mt-2.5 inline-flex items-center px-2 py-0.5 bg-white/10 border border-white/20 rounded-md">

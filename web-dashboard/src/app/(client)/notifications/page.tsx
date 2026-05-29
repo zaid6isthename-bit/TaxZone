@@ -9,7 +9,6 @@ import { TZCard } from "@/components/ui/card";
 import { TZSkeleton } from "@/components/ui/skeleton";
 import { TZEmptyState } from "@/components/ui/empty-state";
 import { useRouter } from "next/navigation";
-import apiClient from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 import { useAuthStore } from "@/lib/store";
