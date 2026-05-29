@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Providers } from "@/components/providers";
 import { TailwindStylesheet } from "@/components/tailwind-stylesheet";
+import { GlobalErrorBoundary } from "@/components/error-boundary";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -39,9 +40,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <TailwindStylesheet />
-        <Providers>
-          {children}
-        </Providers>
+        <GlobalErrorBoundary>
+          <Providers>
+            {children}
+          </Providers>
+        </GlobalErrorBoundary>
       </body>
     </html>
   );

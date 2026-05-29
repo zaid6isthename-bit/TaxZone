@@ -1,42 +1,41 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Supports both the legacy ANON_KEY name and the newer PUBLISHABLE_KEY name
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  '';
 
-// Lazy singleton — avoids crashing during Next.js static pre-rendering when
-// env vars are not yet configured. At runtime (browser / Capacitor) the real
-// values must be present.
+// Lazy singleton — only created on first access (browser / Capacitor runtime).
+// During Next.js static pre-rendering the proxy returns safely without crashing.
 let _supabase: SupabaseClient | null = null;
 
 function getSupabase(): SupabaseClient {
   if (_supabase) return _supabase;
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    // During SSG/build the env vars might be absent. Return a no-op placeholder
-    // so module initialisation doesn't throw. Real calls should never reach here
-    // at runtime if the env is configured properly.
-    if (typeof window === 'undefined') {
-      // Build-time: return a dummy client that won't be called
-      _supabase = createClient(
-        'https://placeholder.supabase.co',
-        'placeholder-key',
-        { auth: { persistSession: false, autoRefreshToken: false } }
-      );
-      return _supabase;
-    }
-    throw new Error(
-      '[TaxZone] Supabase env vars are missing. ' +
-      'Please copy .env.example to .env.local and fill in your project URL and anon key.'
-    );
-  }
+  // At build-time (SSG) env vars may be empty strings — use a safe placeholder
+  // so module init doesn't throw. Real values are baked in at build time.
+  const url = supabaseUrl || 'https://placeholder.supabase.co';
+  const key = supabaseAnonKey || 'placeholder-key';
 
-  _supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: false,
-    },
-  });
+  try {
+    _supabase = createClient(url, key, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+      },
+    });
+  } catch (e) {
+    // If createClient itself throws (e.g. malformed key), fall back to a
+    // placeholder so the React tree doesn't crash on import.
+    console.error('[TaxZone] Supabase createClient failed:', e);
+    _supabase = createClient('https://placeholder.supabase.co', 'placeholder-key', {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
 
   return _supabase;
 }
@@ -48,3 +47,10 @@ export const supabase = new Proxy({} as SupabaseClient, {
     return (getSupabase() as any)[prop];
   },
 });
+
+// Expose URL/key readiness check for auth-provider guards
+export const isSupabaseConfigured = (): boolean =>
+  !!supabaseUrl &&
+  !!supabaseAnonKey &&
+  !supabaseUrl.includes('placeholder') &&
+  !supabaseAnonKey.includes('placeholder');
