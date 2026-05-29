@@ -1,18 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mail, Lock, ArrowLeft } from "lucide-react";
 import { TZButton } from "@/components/ui/button";
 import { TZInput } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/lib/store";
+import { useAuthContext } from "@/components/auth-provider";
+import { TZSkeleton } from "@/components/ui/skeleton";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { isAuthenticated, user } = useAuthStore();
+  const { loading } = useAuthContext();
+
+  // If already logged in, redirect to correct dashboard
+  useEffect(() => {
+    if (loading) return;
+    if (isAuthenticated) {
+      if (user?.role === 'org_admin' || user?.role === 'super_admin') {
+        router.replace('/admin');
+      } else if (user?.role === 'employee' || user?.role === 'ca_reviewer') {
+        router.replace('/employee');
+      } else {
+        router.replace('/');
+      }
+    }
+  }, [loading, isAuthenticated, user?.role, router]);
+
+  if (loading || isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <TZSkeleton className="w-16 h-16 rounded-full mb-4" />
+        <p className="text-gray-400 text-sm font-medium animate-pulse">Redirecting...</p>
+      </div>
+    );
+  }
 
   const handleLogin = async () => {
     if (!email || !password) {
