@@ -92,7 +92,7 @@ export default function EmployeeFilingsPage() {
                   <TZBadge variant={statusVariant[f.status]}>{f.status}</TZBadge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <TZButton variant="ghost" size="icon" className="h-8 w-8 text-gray-400">
+                  <TZButton variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400">
                     <MoreHorizontal size={18} />
                   </TZButton>
                 </TableCell>

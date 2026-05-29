@@ -23,6 +23,10 @@ const FILING_STEPS = [
   { key: 'completed',              label: 'Done'          },
 ];
 
+export function generateStaticParams() {
+  return [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }];
+}
+
 const STATUS_HERO_COLORS: Record<string, string> = {
   not_started:          'from-gray-500 to-gray-600',
   awaiting_documents:   'from-amber-500 to-orange-500',

@@ -91,7 +91,7 @@ export default function ClientsPage() {
                 </TableCell>
                 <TableCell className="text-gray-600">{client.recentFiling}</TableCell>
                 <TableCell className="text-right">
-                  <TZButton variant="ghost" size="icon" className="h-8 w-8 text-gray-400">
+                  <TZButton variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400">
                     <MoreHorizontal size={18} />
                   </TZButton>
                 </TableCell>
