@@ -10,7 +10,7 @@ import { TZCard } from "@/components/ui/card";
 import { TZStatusBadge } from "@/components/ui/status-badge";
 import { TZSkeleton } from "@/components/ui/skeleton";
 import { useRouter, useParams } from "next/navigation";
-import apiClient from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 const FILING_STEPS = [
@@ -24,7 +24,7 @@ const FILING_STEPS = [
 ];
 
 export function generateStaticParams() {
-  return [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }];
+  return []; // We fetch dynamically on client
 }
 
 const STATUS_HERO_COLORS: Record<string, string> = {
@@ -47,30 +47,44 @@ export default function FilingDetailPage() {
   const [isUploadSheetOpen, setUploadSheetOpen] = useState(false);
 
   const { data: filing, isLoading } = useQuery({
-    queryKey: ['filing', params.id],
-    queryFn: () => apiClient.get(`/client/filings/${params.id}`).then(r => r.data),
+    queryKey: ['filing', params?.id],
+    enabled: !!params?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('filings')
+        .select('*, documents(*), users:assigned_ca_id(name)')
+        .eq('id', params!.id)
+        .single();
+        
+      if (error) throw error;
+      
+      return {
+        id: data.id,
+        type: data.type,
+        title: `${data.type} ${data.period}`,
+        currentStatus: data.current_status,
+        lastUpdatedBy: data.users?.name || "System",
+        updatedAt: data.created_at,
+        completionPercentage: data.completion_percentage,
+        dueDate: "31 Oct 2024", // Hardcoded for now if not in schema
+        documentRequests: data.documents.map((d: any) => ({
+          id: d.id,
+          title: d.name,
+          status: d.status,
+          reviewedBy: data.users?.name,
+          url: d.url
+        })),
+        statusHistory: [] // Schema doesn't have history yet
+      };
+    },
   });
 
   if (isLoading) return <FilingDetailSkeleton />;
 
   const data = filing || {
-    id: "1",
-    type: "GSTR-1",
-    title: "GSTR-1 October 2024",
-    currentStatus: "underReview",
-    lastUpdatedBy: "Priya Sharma",
-    updatedAt: "2024-10-29T10:00:00Z",
-    completionPercentage: 60,
-    dueDate: "31 Oct 2024",
-    documentRequests: [
-      { id: "r1", title: "Sales Invoice October", status: "approved", reviewedBy: "Priya Sharma" },
-      { id: "r2", title: "Purchase Register", status: "pending", description: "Please upload the complete excel file." },
-      { id: "r3", title: "Bank Statement", status: "rejected", rejectionReason: "Statement for Oct 15-20 is missing." },
-    ],
-    statusHistory: [
-      { id: "h1", status: "underReview", actorName: "Priya Sharma", createdAt: "2024-10-29T10:00:00Z", notes: "Reviewing uploaded invoices." },
-      { id: "h2", status: "awaiting_documents", actorName: "System", createdAt: "2024-10-28T09:00:00Z" },
-    ]
+    id: "1", type: "GSTR-1", title: "GSTR-1", currentStatus: "not_started",
+    lastUpdatedBy: "System", updatedAt: "", completionPercentage: 0, dueDate: "",
+    documentRequests: [], statusHistory: []
   };
 
   const currentStepIndex = FILING_STEPS.findIndex(s => s.key === data.currentStatus || (data.currentStatus === 'underReview' && s.key === 'documents_under_review'));

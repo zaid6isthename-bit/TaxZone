@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { supabase } from './supabase';
 
 export interface User {
   id: string;
@@ -37,8 +38,10 @@ export const useAuthStore = create<AuthState>()(
       isSidebarCollapsed: false,
       setAuth: (user, accessToken, refreshToken) =>
         set({ user, accessToken, refreshToken, isAuthenticated: true }),
-      logout: () =>
-        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false }),
+      logout: () => {
+        supabase.auth.signOut();
+        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
+      },
       setUnreadCount: (unreadCount) => set({ unreadCount }),
       toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
     }),

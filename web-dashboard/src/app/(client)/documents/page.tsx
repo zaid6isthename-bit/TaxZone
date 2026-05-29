@@ -11,7 +11,8 @@ import { TZCard } from "@/components/ui/card";
 import { TZStatusBadge } from "@/components/ui/status-badge";
 import { TZSkeleton } from "@/components/ui/skeleton";
 import { TZEmptyState } from "@/components/ui/empty-state";
-import apiClient from "@/lib/api";
+import { useAuthStore } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -25,21 +26,50 @@ const DOCUMENT_TABS = [
 export default function DocumentsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
+  const { user } = useAuthStore();
 
   const { data: documents, isLoading } = useQuery({
-    queryKey: ['documents', activeTab, search],
-    queryFn: () => apiClient.get('/client/documents', { params: { status: activeTab, search } }).then(r => r.data),
+    queryKey: ['documents', activeTab, search, user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      let query = supabase.from('documents').select(`
+        *,
+        filings ( type, period )
+      `).eq('client_id', user!.id);
+
+      if (activeTab !== 'all') {
+        query = query.eq('status', activeTab);
+      }
+
+      if (search) {
+        query = query.ilike('name', `%${search}%`);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) throw error;
+
+      return data.map((d: any) => ({
+        id: d.id,
+        originalFilename: d.name,
+        mimeType: d.url.split('.').pop() === 'pdf' ? 'application/pdf' : 'image/jpeg', // simplified mime inference
+        reviewStatus: d.status,
+        filingName: d.filings ? `${d.filings.type} ${d.filings.period}` : 'General',
+        createdAt: d.created_at,
+        fileSizeBytes: 1024 * 1024, // Mock size for now as URL doesn't have it unless we fetch metadata
+        url: d.url
+      }));
+    },
   });
 
-  const displayDocs = documents || [
-    { id: "1", originalFilename: "PAN Card Copy.pdf", mimeType: "application/pdf", reviewStatus: "approved", filingName: "Account Setup", createdAt: "2024-10-25T10:00:00Z", fileSizeBytes: 1024 * 1024 * 2.4 },
-    { id: "2", originalFilename: "Form 16.pdf", mimeType: "application/pdf", reviewStatus: "approved", filingName: "ITR FY 2024-25", createdAt: "2024-10-20T14:30:00Z", fileSizeBytes: 1024 * 1024 * 1.1 },
-    { id: "3", originalFilename: "Invoices Oct.zip", mimeType: "application/zip", reviewStatus: "pending", filingName: "GSTR-1 Oct", createdAt: "2024-10-29T09:15:00Z", fileSizeBytes: 1024 * 1024 * 8.5 },
-    { id: "4", originalFilename: "Rent Receipt.jpg", mimeType: "image/jpeg", reviewStatus: "rejected", filingName: "ITR FY 2024-25", createdAt: "2024-10-22T11:00:00Z", fileSizeBytes: 1024 * 450 },
-  ];
+  const displayDocs = documents || [];
 
-  const handleDownload = (name: string) => {
-    toast.success(`Downloading ${name}...`);
+  const handleDownload = async (doc: any) => {
+    toast.success(`Opening ${doc.originalFilename}...`);
+    // Assuming url is a path in the 'documents' bucket
+    const { data } = supabase.storage.from('documents').getPublicUrl(doc.url);
+    if (data?.publicUrl) {
+      window.open(data.publicUrl, '_blank');
+    }
   };
 
   return (

@@ -12,6 +12,9 @@ import { useRouter } from "next/navigation";
 import apiClient from "@/lib/api";
 import { cn } from "@/lib/utils";
 
+import { useAuthStore } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
+
 const NOTIFICATION_ICONS: Record<string, any> = {
   document_request:    { icon: Upload,      bg: 'bg-brand-primary-light', color: 'text-brand-primary' },
   document_approved:   { icon: CheckCircle, bg: 'bg-success-light',       color: 'text-success'       },
@@ -23,18 +26,33 @@ const NOTIFICATION_ICONS: Record<string, any> = {
 
 export default function NotificationsPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
 
   const { data: notifications, isLoading } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => apiClient.get('/client/notifications').then(r => r.data),
+    queryKey: ['notifications', user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      return data.map(n => ({
+        id: n.id,
+        type: 'filing_status', // Simplified for now since schema only has title/message
+        title: n.title,
+        body: n.message,
+        createdAt: n.created_at,
+        isRead: n.read,
+        filingId: null
+      }));
+    },
   });
 
-  const displayNotifications = notifications || [
-    { id: "1", type: "document_request", title: "Documents Requested", body: "Your CA has requested 3 documents for GSTR-1 October filing.", createdAt: "2024-10-29T12:00:00Z", isRead: false, filingId: "1" },
-    { id: "2", type: "document_approved", title: "ITR Filed Successfully", body: "Your Income Tax Return for FY 2023-24 has been submitted.", createdAt: "2024-10-28T16:30:00Z", isRead: false },
-    { id: "3", type: "deadline_alert", title: "Deadline Approaching", body: "GSTR-3B for November 2024 is due in 5 days.", createdAt: "2024-10-27T10:00:00Z", isRead: true },
-    { id: "4", type: "filing_status", title: "Filing Under Review", body: "GSTR-1 for October 2024 is currently being reviewed.", createdAt: "2024-10-26T09:00:00Z", isRead: true, filingId: "1" },
-  ];
+  const displayNotifications = notifications || [];
 
   return (
     <div className="flex flex-col min-h-screen pb-24 bg-gray-50">

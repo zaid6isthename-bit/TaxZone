@@ -8,37 +8,75 @@ import { TZStatusBadge } from "@/components/ui/status-badge";
 import { TZAvatar } from "@/components/ui/avatar";
 import { TZSkeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
-import apiClient from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
 
 export default function ClientDashboard() {
   const router = useRouter();
   const { user } = useAuthStore();
 
-  const { data: dashboard, isLoading } = useQuery({
-    queryKey: ['dashboard'],
-    queryFn: () => apiClient.get('/client/dashboard').then(r => r.data),
+  const { data, isLoading } = useQuery({
+    queryKey: ['dashboard', user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      // Fetch Pending Documents
+      const { count: pendingDocsCount } = await supabase
+        .from('documents')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', user!.id)
+        .eq('status', 'pending');
+
+      // Fetch Recent Filings
+      const { data: recentFilings } = await supabase
+        .from('filings')
+        .select('*')
+        .eq('client_id', user!.id)
+        .order('days_until_due', { ascending: true })
+        .limit(3);
+
+      // Fetch Assigned CA
+      let employee = { name: "Not Assigned", designation: "N/A", phone: "" };
+      if (recentFilings && recentFilings.length > 0 && recentFilings[0].assigned_ca_id) {
+        const { data: caData } = await supabase
+          .from('users')
+          .select('name, phone')
+          .eq('id', recentFilings[0].assigned_ca_id)
+          .single();
+        if (caData) {
+          employee = { name: caData.name, designation: "Tax Associate", phone: caData.phone || "" };
+        }
+      }
+
+      return {
+        pendingDocumentRequests: pendingDocsCount || 0,
+        recentFilings: (recentFilings || []).map(f => ({
+          id: f.id,
+          type: f.type,
+          period: f.period,
+          currentStatus: f.current_status,
+          completionPercentage: f.completion_percentage,
+          daysUntilDue: f.days_until_due
+        })),
+        upcomingDeadlines: (recentFilings || []).map(f => {
+          // Format date assuming days_until_due gives us the date
+          const d = new Date();
+          d.setDate(d.getDate() + (f.days_until_due || 0));
+          const month = d.toLocaleString('en-US', { month: 'short' });
+          const date = d.getDate().toString();
+          return { date, month, title: `${f.type} ${month}`, status: f.current_status };
+        }),
+        employee
+      };
+    },
   });
 
-  if (isLoading) return <DashboardSkeleton />;
-
-  const data = dashboard || {
-    pendingDocumentRequests: 3,
-    recentFilings: [
-      { id: "1", type: "GSTR-1", period: "October 2024", currentStatus: "underReview", completionPercentage: 60, daysUntilDue: 2 },
-      { id: "2", type: "ITR", period: "FY 2024-25", currentStatus: "in_progress", completionPercentage: 40, daysUntilDue: 15 },
-      { id: "3", type: "TDS", period: "Q2 FY 2024-25", currentStatus: "completed", completionPercentage: 100, daysUntilDue: -5 },
-    ],
-    upcomingDeadlines: [
-      { date: "31", month: "Oct", title: "GSTR-1 October", status: "underReview" },
-      { date: "20", month: "Nov", title: "GSTR-3B November", status: "not_started" },
-    ],
-    employee: { name: "Priya Sharma", designation: "Tax Associate", phone: "+919876543210" }
-  };
+  if (isLoading || !data) return <DashboardSkeleton />;
 
   const handleMessage = () => {
-    const message = encodeURIComponent("Hi Priya, I have a query regarding my tax filing.");
-    window.open(`https://wa.me/${data.employee.phone.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
+    const message = encodeURIComponent("Hi, I have a query regarding my tax filing.");
+    if (data.employee.phone) {
+      window.open(`https://wa.me/${data.employee.phone.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
+    }
   };
 
   return (

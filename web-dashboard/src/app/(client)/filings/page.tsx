@@ -9,7 +9,8 @@ import { TZInput } from "@/components/ui/input";
 import { TZSkeleton } from "@/components/ui/skeleton";
 import { TZEmptyState } from "@/components/ui/empty-state";
 import { useRouter } from "next/navigation";
-import apiClient from "@/lib/api";
+import { useAuthStore } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
 
 const STATUS_FILTERS = ['All','Pending','In Progress','Completed','Overdue'] as const;
 
@@ -17,19 +18,44 @@ export default function FilingsPage() {
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [search, setSearch] = useState("");
   const router = useRouter();
+  const { user } = useAuthStore();
 
   const { data: filings, isLoading } = useQuery({
-    queryKey: ['filings', activeFilter, search],
-    queryFn: () => apiClient.get('/client/filings', { params: { filter: activeFilter, search } }).then(r => r.data),
-    // Fallback data for presentation
+    queryKey: ['filings', activeFilter, search, user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      let query = supabase.from('filings').select('*').eq('client_id', user!.id);
+      
+      if (activeFilter !== 'All') {
+        const statusMap: any = {
+          'Pending': 'not_started',
+          'In Progress': 'in_progress',
+          'Completed': 'completed',
+          'Overdue': 'overdue' // Assuming overdue logic or status exists
+        };
+        query = query.eq('current_status', statusMap[activeFilter] || activeFilter.toLowerCase());
+      }
+
+      if (search) {
+        query = query.ilike('type', `%${search}%`); // Search by type for now
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) throw error;
+      
+      return data.map(f => ({
+        id: f.id,
+        type: f.type,
+        title: `${f.type} ${f.period}`,
+        currentStatus: f.current_status,
+        completionPercentage: f.completion_percentage,
+        daysUntilDue: f.days_until_due,
+        updatedAt: f.created_at
+      }));
+    },
   });
 
-  const displayFilings = filings || [
-    { id: "1", type: "GSTR-1", title: "GSTR-1 October 2024", currentStatus: "underReview", completionPercentage: 60, dueDate: "2024-10-31", daysUntilDue: 2, priority: "urgent", updatedAt: "2024-10-29T10:00:00Z" },
-    { id: "2", type: "ITR", title: "ITR FY 2024-25", currentStatus: "in_progress", completionPercentage: 40, dueDate: "2025-07-31", daysUntilDue: 15, priority: "normal", updatedAt: "2024-10-25T14:30:00Z" },
-    { id: "3", type: "TDS", title: "TDS Q2 FY 2024-25", currentStatus: "completed", completionPercentage: 100, dueDate: "2024-10-15", daysUntilDue: -14, priority: "normal", updatedAt: "2024-10-15T09:15:00Z" },
-    { id: "4", type: "GSTR-3B", title: "GSTR-3B October 2024", currentStatus: "not_started", completionPercentage: 0, dueDate: "2024-11-20", daysUntilDue: 22, priority: "normal", updatedAt: "2024-10-20T11:00:00Z" },
-  ];
+  const displayFilings = filings || [];
 
   return (
     <div className="flex flex-col min-h-screen pb-24 bg-gray-50">
