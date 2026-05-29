@@ -1,18 +1,13 @@
 package com.taxzone.app
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import com.taxzone.app.ui.navigation.AppNavigation
-import com.taxzone.app.ui.theme.TaxZoneTheme
+import androidx.activity.enableEdgeToEdge
+import com.getcapacitor.BridgeActivity
 
-class MainActivity : ComponentActivity() {
+class MainActivity : BridgeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            TaxZoneTheme {
-                AppNavigation()
-            }
-        }
+        enableEdgeToEdge()   // Full-screen edge-to-edge display
+        registerPlugin(SmsRetrieverPlugin::class.java)
     }
 }

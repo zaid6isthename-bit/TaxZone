@@ -1,3 +1,3 @@
 export default function Head() {
-  return <link rel="stylesheet" href="/tailwind.generated.css" />;
+  return null;
 }

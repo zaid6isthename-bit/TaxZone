@@ -1,41 +1,56 @@
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
-interface UserState {
-  user: any | null;
-  role: 'client' | 'employee' | 'admin' | null;
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'client' | 'employee' | 'ca_reviewer' | 'manager' | 'org_admin' | 'super_admin';
+  businessName?: string;
+  gstin?: string;
+  avatar?: string;
+  isFirstLogin: boolean;
+}
+
+interface AuthState {
+  user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
-  setUser: (user: any, role: 'client' | 'employee' | 'admin') => void;
+  unreadCount: number;
+  isSidebarCollapsed: boolean;
+  setAuth: (user: User, at: string, rt: string) => void;
   logout: () => void;
-}
-
-export const useUserStore = create<UserState>()(
-  devtools(
-    persist(
-      (set) => ({
-        user: null,
-        role: null,
-        isAuthenticated: false,
-        setUser: (user, role) => set({ user, role, isAuthenticated: true }),
-        logout: () => set({ user: null, role: null, isAuthenticated: false }),
-      }),
-      {
-        name: 'taxzone-auth-storage',
-      }
-    )
-  )
-);
-
-interface AppState {
-  isSidebarOpen: boolean;
+  setUnreadCount: (n: number) => void;
   toggleSidebar: () => void;
-  setSidebarOpen: (isOpen: boolean) => void;
 }
 
-export const useAppStore = create<AppState>()(
-  devtools((set) => ({
-    isSidebarOpen: true,
-    toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
-    setSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
-  }))
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false,
+      unreadCount: 0,
+      isSidebarCollapsed: false,
+      setAuth: (user, accessToken, refreshToken) =>
+        set({ user, accessToken, refreshToken, isAuthenticated: true }),
+      logout: () =>
+        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false }),
+      setUnreadCount: (unreadCount) => set({ unreadCount }),
+      toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+    }),
+    {
+      name: 'taxzone-auth',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
+  )
 );

@@ -1,79 +1,99 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import {
+  Bell, Upload, CheckCircle, XCircle, RefreshCw,
+  Clock, Trophy, ChevronRight
+} from "lucide-react";
 import { TZCard } from "@/components/ui/card";
-import { Bell, FileText, Upload, CheckCircle, AlertCircle, Info } from "lucide-react";
+import { TZSkeleton } from "@/components/ui/skeleton";
+import { TZEmptyState } from "@/components/ui/empty-state";
+import { useRouter } from "next/navigation";
+import apiClient from "@/lib/api";
+import { cn } from "@/lib/utils";
 
-const notifications = [
-  {
-    icon: Upload,
-    iconBg: "bg-warning-light text-warning",
-    title: "Documents Requested",
-    desc: "Your CA has requested 3 documents for GSTR-1 October filing.",
-    time: "2 hours ago",
-    unread: true,
-  },
-  {
-    icon: CheckCircle,
-    iconBg: "bg-success-light text-success",
-    title: "ITR Filed Successfully",
-    desc: "Your Income Tax Return for FY 2023-24 has been submitted to the Income Tax portal.",
-    time: "Yesterday, 4:30 PM",
-    unread: true,
-  },
-  {
-    icon: AlertCircle,
-    iconBg: "bg-danger-light text-danger",
-    title: "Deadline Approaching",
-    desc: "GSTR-3B for November 2024 is due in 5 days. Ensure your documents are ready.",
-    time: "2 days ago",
-    unread: false,
-  },
-  {
-    icon: FileText,
-    iconBg: "bg-brand-primary-light text-brand-primary",
-    title: "Filing Under Review",
-    desc: "GSTR-1 for October 2024 has been submitted and is under review by your CA.",
-    time: "3 days ago",
-    unread: false,
-  },
-  {
-    icon: Info,
-    iconBg: "bg-info-light text-info",
-    title: "New Tax Update",
-    desc: "GST Council has revised late fee structure for FY 2024-25. Tap to read more.",
-    time: "1 week ago",
-    unread: false,
-  },
-];
+const NOTIFICATION_ICONS: Record<string, any> = {
+  document_request:    { icon: Upload,      bg: 'bg-brand-primary-light', color: 'text-brand-primary' },
+  document_approved:   { icon: CheckCircle, bg: 'bg-success-light',       color: 'text-success'       },
+  document_rejected:   { icon: XCircle,     bg: 'bg-danger-light',        color: 'text-danger'        },
+  filing_status:       { icon: RefreshCw,   bg: 'bg-info-light',          color: 'text-info'          },
+  deadline_alert:      { icon: Clock,       bg: 'bg-warning-light',       color: 'text-warning'       },
+  filing_completed:    { icon: Trophy,      bg: 'bg-success-light',       color: 'text-success'       },
+};
 
 export default function NotificationsPage() {
+  const router = useRouter();
+
+  const { data: notifications, isLoading } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => apiClient.get('/client/notifications').then(r => r.data),
+  });
+
+  const displayNotifications = notifications || [
+    { id: "1", type: "document_request", title: "Documents Requested", body: "Your CA has requested 3 documents for GSTR-1 October filing.", createdAt: "2024-10-29T12:00:00Z", isRead: false, filingId: "1" },
+    { id: "2", type: "document_approved", title: "ITR Filed Successfully", body: "Your Income Tax Return for FY 2023-24 has been submitted.", createdAt: "2024-10-28T16:30:00Z", isRead: false },
+    { id: "3", type: "deadline_alert", title: "Deadline Approaching", body: "GSTR-3B for November 2024 is due in 5 days.", createdAt: "2024-10-27T10:00:00Z", isRead: true },
+    { id: "4", type: "filing_status", title: "Filing Under Review", body: "GSTR-1 for October 2024 is currently being reviewed.", createdAt: "2024-10-26T09:00:00Z", isRead: true, filingId: "1" },
+  ];
+
   return (
-    <div className="flex flex-col min-h-screen pb-20 bg-gray-50">
-      <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
-        <h1 className="text-lg font-bold font-display text-gray-900">Notifications</h1>
-        <button className="text-sm font-medium text-brand-primary">Mark all read</button>
+    <div className="flex flex-col min-h-screen pb-24 bg-gray-50">
+      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-100 px-5 pt-12 pb-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold font-display text-gray-900">Notifications</h1>
+        <button className="text-xs font-bold text-brand-primary uppercase tracking-widest hover:underline">Mark all read</button>
       </header>
 
-      <div className="px-4 py-4 space-y-3">
-        {notifications.map((n, i) => (
-          <TZCard
-            key={i}
-            className={`p-4 flex items-start gap-3 transition-all ${n.unread ? "border-brand-primary/30 bg-brand-primary-light/10" : ""}`}
-          >
-            <div className={`shrink-0 flex items-center justify-center w-10 h-10 rounded-full ${n.iconBg}`}>
-              <n.icon size={18} />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className={`text-[14px] font-semibold ${n.unread ? "text-gray-900" : "text-gray-700"}`}>{n.title}</h3>
-                {n.unread && <span className="shrink-0 w-2 h-2 bg-brand-primary rounded-full mt-1.5"></span>}
-              </div>
-              <p className="mt-0.5 text-[13px] text-gray-500 leading-snug">{n.desc}</p>
-              <p className="mt-2 text-[11px] font-medium text-gray-400">{n.time}</p>
-            </div>
-          </TZCard>
-        ))}
+      <div className="flex-1 px-4 py-4 space-y-3">
+        {isLoading ? (
+          Array(6).fill(0).map((_, i) => <TZSkeleton key={i} className="h-24 w-full rounded-xl" />)
+        ) : displayNotifications.length > 0 ? (
+          displayNotifications.map((n: any) => (
+            <NotificationItem key={n.id} n={n} onClick={() => n.filingId && router.push(`/filings/${n.filingId}`)} />
+          ))
+        ) : (
+          <TZEmptyState
+            icon={<Bell className="w-12 h-12 text-gray-300" />}
+            title="All caught up!"
+            description="You don't have any new notifications at the moment."
+          />
+        )}
       </div>
     </div>
+  );
+}
+
+function NotificationItem({ n, onClick }: { n: any; onClick: () => void }) {
+  const config = NOTIFICATION_ICONS[n.type] || NOTIFICATION_ICONS.filing_status;
+
+  return (
+    <TZCard
+      interactive
+      onClick={onClick}
+      className={cn(
+        "p-4 border-none shadow-sm transition-all duration-200",
+        !n.isRead ? "bg-white ring-1 ring-brand-primary/10 border-l-4 border-l-brand-primary" : "bg-gray-50/50 opacity-80"
+      )}
+    >
+      <div className="flex items-start gap-4">
+        <div className={cn("w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center shadow-sm", config.bg)}>
+          <config.icon className={cn("w-5 h-5", config.color)} strokeWidth={2.5} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start mb-1">
+            <h3 className={cn("text-[14px] font-bold font-display leading-tight", !n.isRead ? "text-gray-900" : "text-gray-600")}>
+              {n.title}
+            </h3>
+            {!n.isRead && <div className="w-2 h-2 bg-brand-primary rounded-full mt-1.5 animate-pulse shrink-0" />}
+          </div>
+          <p className="text-[13px] font-medium font-body text-gray-500 leading-snug line-clamp-2">
+            {n.body}
+          </p>
+          <p className="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-widest">
+            2 hours ago
+          </p>
+        </div>
+      </div>
+    </TZCard>
   );
 }

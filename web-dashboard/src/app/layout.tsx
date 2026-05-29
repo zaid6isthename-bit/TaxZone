@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  userScalable: false,
 };
 
 export const metadata: Metadata = {
@@ -14,21 +16,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="antialiased">
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              "document.head.appendChild(Object.assign(document.createElement('link'),{rel:'stylesheet',href:'/tailwind.generated.css'}));",
-          }}
-        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=IBM+Plex+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <link rel="stylesheet" href="/tailwind.generated.css" />
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
