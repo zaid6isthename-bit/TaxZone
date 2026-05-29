@@ -37,7 +37,7 @@ const STATUS_HERO_COLORS: Record<string, string> = {
   on_hold:              'from-gray-400 to-gray-600',
 };
 
-export default function FilingDetailPage() {
+function FilingDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams?.get('id');
@@ -266,5 +266,13 @@ function FilingDetailSkeleton() {
         <TZSkeleton className="h-32 w-full rounded-2xl" />
       </div>
     </div>
+  );
+}
+
+export default function FilingDetailPage() {
+  return (
+    <React.Suspense fallback={<FilingDetailSkeleton />}>
+      <FilingDetailContent />
+    </React.Suspense>
   );
 }

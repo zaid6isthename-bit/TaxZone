@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'taxzone-auth',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => typeof window !== 'undefined' ? localStorage : ({} as any)),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,

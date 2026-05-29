@@ -167,9 +167,9 @@ export default function AdminClientsPage() {
           <div className="flex-1 overflow-y-auto no-scrollbar">
             {/* Profile Header */}
             <div className="p-8 flex flex-col items-center text-center">
-              <TZAvatar name={selectedClient.name} size="xl" className="ring-8 ring-gray-50 mb-4" />
-              <h3 className="text-2xl font-bold font-display text-gray-900 leading-tight">{selectedClient.name}</h3>
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1.5">{selectedClient.type} · {selectedClient.id}</p>
+              <TZAvatar name={selectedClient?.name || "Unknown"} size="xl" className="ring-8 ring-gray-50 mb-4" />
+              <h3 className="text-2xl font-bold font-display text-gray-900 leading-tight">{selectedClient?.name}</h3>
+              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1.5">{selectedClient?.type} · {selectedClient?.id}</p>
 
               <div className="flex gap-2 mt-6">
                 <TZButton variant="primary" size="sm" className="h-10 px-6 rounded-full shadow-lg shadow-brand-primary/20 font-bold uppercase tracking-widest text-[10px]">
@@ -185,19 +185,19 @@ export default function AdminClientsPage() {
             <div className="px-8 grid grid-cols-2 gap-4 pb-8">
               <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100/50">
                 <div className="flex items-center gap-2 mb-1.5"><Phone size={12} className="text-gray-400" /><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Phone</span></div>
-                <p className="text-xs font-bold text-gray-900">{selectedClient.phone}</p>
+                <p className="text-xs font-bold text-gray-900">{selectedClient?.phone || "N/A"}</p>
               </div>
               <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100/50">
                 <div className="flex items-center gap-2 mb-1.5"><Mail size={12} className="text-gray-400" /><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Email</span></div>
-                <p className="text-xs font-bold text-gray-900 truncate">rajesh@example.com</p>
+                <p className="text-xs font-bold text-gray-900 truncate">{selectedClient?.email || "N/A"}</p>
               </div>
               <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100/50">
                 <div className="flex items-center gap-2 mb-1.5"><Hash size={12} className="text-gray-400" /><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">GSTIN</span></div>
-                <p className="text-xs font-mono font-bold text-brand-primary">{selectedClient.gstin || "NOT ADDED"}</p>
+                <p className="text-xs font-mono font-bold text-brand-primary">{selectedClient?.gstin || "NOT ADDED"}</p>
               </div>
               <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100/50">
                 <div className="flex items-center gap-2 mb-1.5"><Briefcase size={12} className="text-gray-400" /><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Assigned CA</span></div>
-                <p className="text-xs font-bold text-gray-900">{selectedClient.assignee}</p>
+                <p className="text-xs font-bold text-gray-900">{selectedClient?.assignee}</p>
               </div>
             </div>
 
