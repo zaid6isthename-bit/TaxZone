@@ -1,0 +1,31 @@
+# ============================================================
+# TEMPORARY — DEVELOPMENT ONLY — DO NOT USE IN PRODUCTION
+# ============================================================
+# Run with: docker compose up
+# Stop with: docker compose down
+# ============================================================
+
+services:
+  taxzone-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taxzone-dev
+    ports:
+      - "3000:3000"
+    environment:
+      # Required for Next.js to bind to all interfaces inside the container
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+      # Ensure Next.js dev mode hot reload works through Docker volumes
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      # Mount local source into container for hot reload
+      - .:/app
+      # Keep node_modules ISOLATED inside the container — do NOT sync to host
+      - /app/node_modules
+      # Keep .next cache isolated inside the container
+      - /app/.next
+    stdin_open: true
+    tty: true
