@@ -1,0 +1,39 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.taxzone.owner"
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "com.taxzone.owner"
+        minSdk 23
+        targetSdk 36
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    signingConfigs {
+        release {
+            def props = new Properties()
+            def propsFile = rootProject.file("release-signing.properties")
+            if (propsFile.exists()) {
+                propsFile.withInputStream { props.load(it) }
+            }
+            storeFile props["storeFile"] ? rootProject.file(props["storeFile"]) : null
+            storePassword props["storePassword"]
+            keyAlias props["keyAlias"]
+            keyPassword props["keyPassword"]
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
+        }
+    }
+}
+

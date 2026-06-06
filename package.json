@@ -1,0 +1,16 @@
+{
+  "name": "taxzone",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "backend:dev": "npm --workspace @taxzone/backend run dev",
+    "backend:build": "npm --workspace @taxzone/backend run build",
+    "frontend:dev": "npm --workspace @taxzone/frontend run dev",
+    "frontend:build": "npm --workspace @taxzone/frontend run build"
+  }
+}
+
