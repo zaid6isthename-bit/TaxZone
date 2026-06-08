@@ -14,7 +14,7 @@ const AuthContext = createContext<AuthContextType>({ loading: true });
 export const useAuthContext = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setAuth, logout } = useAuthStore();
+  const { setAuth, logout, accessToken, isAuthenticated } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
 
@@ -23,6 +23,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function initializeAuth() {
       try {
+        // Check if we already have a token from backend auth (admin/employee login)
+        if (accessToken && isAuthenticated) {
+          if (mountedRef.current) setLoading(false);
+          return;
+        }
+
+        // Check for Supabase session (client login via OTP)
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
@@ -48,11 +55,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (mountedRef.current) logout();
           }
         } else {
-          if (mountedRef.current) logout();
+          // If no tokens at all, set loading to false (user may be on login page)
+          if (mountedRef.current) setLoading(false);
         }
       } catch (error) {
         console.error("Auth init error:", error);
-        if (mountedRef.current) logout();
+        if (mountedRef.current) setLoading(false);
       } finally {
         if (mountedRef.current) setLoading(false);
       }

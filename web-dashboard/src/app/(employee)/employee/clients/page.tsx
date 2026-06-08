@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { 
   TZTable, 
   TableHeader, 
@@ -12,89 +14,81 @@ import { TZButton } from "@/components/ui/button";
 import { TZInput } from "@/components/ui/input";
 import { TZBadge } from "@/components/ui/badge";
 import { TZAvatar } from "@/components/ui/avatar";
-import { Search, Plus, MoreHorizontal } from "lucide-react";
-
-// Mock data
-const clients = [
-  { id: "CL-001", name: "Rajesh Kumar", type: "Individual", status: "Active", recentFiling: "ITR - Under Review" },
-  { id: "CL-002", name: "Acme Corp Ltd", type: "Corporate", status: "Active", recentFiling: "GSTR-1 - Pending" },
-  { id: "CL-003", name: "TechNova Solutions", type: "Corporate", status: "Onboarding", recentFiling: "N/A" },
-  { id: "CL-004", name: "Priya Singh", type: "Individual", status: "Inactive", recentFiling: "ITR - Completed" },
-  { id: "CL-005", name: "Global Exports", type: "Corporate", status: "Active", recentFiling: "GSTR-3B - Draft" },
-];
+import { TZSkeleton } from "@/components/ui/skeleton";
+import { Search, Plus } from "lucide-react";
+import { clientsService, Client } from "@/services/clients";
+import { useAuthStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
 
 export default function ClientsPage() {
+  const [search, setSearch] = useState("");
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['employee-clients', search],
+    queryFn: () => clientsService.list({ search, assignedEmployeeId: user?.id }),
+    enabled: !!user,
+  });
+
+  const clients: Client[] = data?.data || [];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-display text-gray-900">Clients</h1>
           <p className="text-gray-500">Manage your client portfolio.</p>
         </div>
-        <TZButton className="gap-2">
-          <Plus size={18} />
-          Add Client
-        </TZButton>
+        <TZButton className="gap-2"><Plus size={18} />Add Client</TZButton>
       </div>
 
-      {/* Toolbar */}
       <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
         <div className="flex w-1/3">
           <TZInput 
             placeholder="Search clients..." 
             icon={<Search size={18} />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-        <div className="flex gap-2">
-          <TZButton variant="outline">Filter</TZButton>
-          <TZButton variant="outline">Export</TZButton>
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
         <TZTable>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[80px]">ID</TableHead>
               <TableHead>Client Name</TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>PAN</TableHead>
+              <TableHead>GSTIN</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Recent Filing</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Filings</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {clients.map((client) => (
-              <TableRow key={client.id} className="cursor-pointer">
-                <TableCell className="font-medium text-gray-500">{client.id}</TableCell>
+            {isLoading ? (
+              <TableRow><TableCell colSpan={6} className="text-center py-8"><TZSkeleton className="h-8 w-full" /></TableCell></TableRow>
+            ) : clients.length === 0 ? (
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-400">No clients found</TableCell></TableRow>
+            ) : clients.map((client) => (
+              <TableRow key={client.id} className="cursor-pointer hover:bg-gray-50" onClick={() => router.push(`/employee/clients/detail?id=${client.id}`)}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <TZAvatar 
-                      name={client.name}
-                      size="sm"
-                    />
-                    <span className="font-medium text-gray-900">{client.name}</span>
+                    <TZAvatar name={client.displayName} size="sm" />
+                    <div>
+                      <p className="font-medium text-gray-900">{client.displayName}</p>
+                      <p className="text-xs text-gray-500">{client.clientUser?.email}</p>
+                    </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-gray-600">{client.type}</TableCell>
+                <TableCell className="text-gray-600">{client.businessType}</TableCell>
+                <TableCell className="text-gray-500 text-sm">{client.pan || '-'}</TableCell>
+                <TableCell className="text-gray-500 text-sm">{client.gstin || '-'}</TableCell>
                 <TableCell>
-                  <TZBadge 
-                    variant={
-                      client.status === 'Active' ? 'success' : 
-                      client.status === 'Onboarding' ? 'warning' : 'secondary'
-                    }
-                  >
-                    {client.status}
-                  </TZBadge>
+                  <TZBadge variant={client.onboardingStatus === 'active' ? 'success' : 'secondary'}>{client.onboardingStatus}</TZBadge>
                 </TableCell>
-                <TableCell className="text-gray-600">{client.recentFiling}</TableCell>
-                <TableCell className="text-right">
-                  <TZButton variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400">
-                    <MoreHorizontal size={18} />
-                  </TZButton>
-                </TableCell>
+                <TableCell className="font-medium">{client._count?.filings || 0}</TableCell>
               </TableRow>
             ))}
           </TableBody>

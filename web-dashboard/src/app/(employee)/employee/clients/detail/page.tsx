@@ -1,29 +1,57 @@
 "use client";
 
-import { use } from "react";
+import { use, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { TZCard } from "@/components/ui/card";
 import { TZBadge } from "@/components/ui/badge";
 import { TZButton } from "@/components/ui/button";
 import { TZAvatar } from "@/components/ui/avatar";
-import { FileText, Phone, Mail, MapPin, Calendar, Upload, Download } from "lucide-react";
+import { TZSkeleton } from "@/components/ui/skeleton";
+import { FileText, Phone, Mail, Calendar, Upload } from "lucide-react";
 import Link from "next/link";
+import { clientsService, Client } from "@/services/clients";
+import { filingsService, Filing } from "@/services/filings";
 
-export default function ClientDetailPage() {
-  // Using static mock data since static export doesn't support dynamic routes without generateStaticParams
-  const clientId = "CL-001";
-  
+function ClientDetailContent() {
+  const searchParams = useSearchParams();
+  const clientId = searchParams.get('id') || '';
+
+  const { data: client, isLoading } = useQuery({
+    queryKey: ['client-detail', clientId],
+    queryFn: () => clientsService.getById(clientId),
+    enabled: !!clientId,
+  });
+
+  const { data: filingsData } = useQuery({
+    queryKey: ['client-filings', clientId],
+    queryFn: () => filingsService.list({ clientId }),
+    enabled: !!clientId,
+  });
+
+  const filings: Filing[] = filingsData?.data || [];
+
+  if (isLoading) {
+    return <div className="space-y-6"><TZSkeleton className="h-48 w-full" /><TZSkeleton className="h-64 w-full" /></div>;
+  }
+
+  if (!client) {
+    return <p className="text-center py-12 text-gray-400">Client not found</p>;
+  }
+
+  const statusVariant = client.onboardingStatus === 'active' ? 'success' : client.onboardingStatus === 'onboarding' ? 'warning' : 'secondary';
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <TZAvatar name="Rajesh Kumar" size="xl" />
+          <TZAvatar name={client.displayName} size="xl" />
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold font-display text-gray-900">Rajesh Kumar</h1>
-              <TZBadge variant="success">Active</TZBadge>
+              <h1 className="text-2xl font-bold font-display text-gray-900">{client.displayName}</h1>
+              <TZBadge variant={statusVariant}>{client.onboardingStatus}</TZBadge>
             </div>
-            <p className="text-gray-500 text-sm">Individual • Client ID: {clientId}</p>
+            <p className="text-gray-500 text-sm">{client.businessType} • {client.clientUser?.email}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -33,30 +61,24 @@ export default function ClientDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Contact & Details */}
         <div className="space-y-6">
           <TZCard className="p-5">
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Contact Information</h3>
             <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">+91 98765 43210</p>
-                  <p className="text-xs text-gray-500">Primary</p>
+              {client.clientUser?.phone && (
+                <div className="flex items-start gap-3">
+                  <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{client.clientUser.phone}</p>
+                    <p className="text-xs text-gray-500">Primary</p>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="flex items-start gap-3">
                 <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">rajesh.kumar@example.com</p>
-                  <p className="text-xs text-gray-500">Personal</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">123, Skyline Apartments, Andheri West</p>
-                  <p className="text-xs text-gray-500">Mumbai, Maharashtra 400053</p>
+                  <p className="text-sm font-medium text-gray-900">{client.clientUser?.email}</p>
+                  <p className="text-xs text-gray-500">Email</p>
                 </div>
               </div>
             </div>
@@ -65,23 +87,35 @@ export default function ClientDetailPage() {
           <TZCard className="p-5">
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Tax Details</h3>
             <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-gray-100 last:border-0">
+              <div className="flex justify-between py-2 border-b border-gray-100">
                 <span className="text-sm text-gray-500">PAN</span>
-                <span className="text-sm font-medium font-mono text-gray-900">ABCDE1234F</span>
+                <span className="text-sm font-medium font-mono text-gray-900">{client.pan || 'N/A'}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-100 last:border-0">
-                <span className="text-sm text-gray-500">Aadhaar</span>
-                <span className="text-sm font-medium font-mono text-gray-900">XXXX XXXX 1234</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-gray-100 last:border-0">
+              <div className="flex justify-between py-2 border-b border-gray-100">
                 <span className="text-sm text-gray-500">GSTIN</span>
-                <span className="text-sm font-medium font-mono text-gray-400">Not Applicable</span>
+                <span className="text-sm font-medium font-mono text-gray-900">{client.gstin || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-sm text-gray-500">Assigned Employee</span>
+                <span className="text-sm font-medium text-gray-900">{client.assignedEmployee?.name || 'Unassigned'}</span>
               </div>
             </div>
           </TZCard>
+
+          {client.assignedEmployee && (
+            <TZCard className="p-5">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Assigned CA</h3>
+              <div className="flex items-center gap-3">
+                <TZAvatar name={client.assignedEmployee.name} size="sm" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{client.assignedEmployee.name}</p>
+                  <p className="text-xs text-gray-500">{client.assignedEmployee.email}</p>
+                </div>
+              </div>
+            </TZCard>
+          )}
         </div>
 
-        {/* Right Column - Filings & Documents */}
         <div className="lg:col-span-2 space-y-6">
           <TZCard className="p-0">
             <div className="flex items-center justify-between p-5 border-b border-gray-200">
@@ -89,27 +123,22 @@ export default function ClientDetailPage() {
               <Link href="#" className="text-sm font-medium text-brand-primary hover:underline">View All</Link>
             </div>
             <div className="divide-y divide-gray-100">
-              {[
-                { name: "Income Tax Return (ITR-1)", period: "FY 2023-24", status: "Completed", date: "15 Jul 2024", variant: "success" },
-                { name: "Advance Tax Installment", period: "Q2 FY 2024-25", status: "Under Review", date: "10 Sep 2024", variant: "underReview" },
-              ].map((filing, i) => (
-                <div key={i} className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors">
+              {filings.length === 0 ? (
+                <p className="p-5 text-gray-400 text-sm">No filings yet</p>
+              ) : filings.slice(0, 5).map((filing) => (
+                <div key={filing.id} className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start gap-4">
-                    <div className="p-2 bg-gray-100 rounded-lg text-gray-500">
-                      <FileText size={20} />
-                    </div>
+                    <div className="p-2 bg-gray-100 rounded-lg text-gray-500"><FileText size={20} /></div>
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-900">{filing.name}</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{filing.category}</h4>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-medium text-gray-500">{filing.period}</span>
+                        <span className="text-xs font-medium text-gray-500">{new Date(filing.periodStart).toLocaleDateString()} - {new Date(filing.periodEnd).toLocaleDateString()}</span>
                         <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <Calendar size={12} /> {filing.date}
-                        </span>
+                        <span className="text-xs text-gray-500 flex items-center gap-1"><Calendar size={12} /> {new Date(filing.dueAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
-                  <TZBadge variant={filing.variant as any}>{filing.status}</TZBadge>
+                  <TZBadge variant={filing.status === 'completed' ? 'success' : filing.status === 'in_progress' ? 'inProgress' : 'secondary'}>{filing.status.replace(/_/g, ' ')}</TZBadge>
                 </div>
               ))}
             </div>
@@ -118,36 +147,39 @@ export default function ClientDetailPage() {
           <TZCard className="p-0">
             <div className="flex items-center justify-between p-5 border-b border-gray-200">
               <h3 className="text-lg font-semibold font-display text-gray-900">Documents</h3>
-              <TZButton variant="outline" size="sm" className="gap-2 text-xs h-8">
-                <Upload size={14} /> Request Document
-              </TZButton>
+              <TZButton variant="outline" size="sm" className="gap-2 text-xs h-8"><Upload size={14} /> Request Document</TZButton>
             </div>
             <div className="p-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { name: "PAN Card Copy.pdf", size: "2.4 MB", date: "Uploaded 10 May 2023" },
-                  { name: "Form 16 - FY23-24.pdf", size: "1.1 MB", date: "Uploaded 15 Jun 2024" },
-                ].map((doc, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-brand-primary/50 transition-colors cursor-pointer group">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-brand-primary-light text-brand-primary rounded-lg">
-                        <FileText size={16} />
+              {(client as any).documents?.length ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(client as any).documents.map((doc: any) => (
+                    <div key={doc.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-brand-primary/50 transition-colors cursor-pointer group">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-brand-primary-light text-brand-primary rounded-lg"><FileText size={16} /></div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">{doc.originalFilename}</p>
+                          <p className="text-xs text-gray-500">{doc.mimeType}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">{doc.name}</p>
-                        <p className="text-xs text-gray-500">{doc.size}</p>
-                      </div>
+                      <TZBadge variant={doc.verificationStatus === 'approved' ? 'success' : 'warning'} className="text-[10px]">{doc.verificationStatus}</TZBadge>
                     </div>
-                    <button className="text-gray-400 group-hover:text-brand-primary transition-colors">
-                      <Download size={18} />
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-400 text-sm text-center py-4">No documents uploaded</p>
+              )}
             </div>
           </TZCard>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ClientDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-8"><TZSkeleton className="h-96 w-full" /></div>}>
+      <ClientDetailContent />
+    </Suspense>
   );
 }

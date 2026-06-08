@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
 import { useAuthContext } from "@/components/auth-provider";
-import { Sidebar } from "@/components/layout/sidebar";
-import { TopBar } from "@/components/layout/topbar";
 import { TZSkeleton } from "@/components/ui/skeleton";
 
 export default function EmployeeLayout({
@@ -12,6 +11,7 @@ export default function EmployeeLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
   const { loading } = useAuthContext();
 
@@ -37,15 +37,5 @@ export default function EmployeeLayout({
     );
   }
 
-  return (
-    <div className="flex w-full min-h-screen bg-gray-50">
-      <Sidebar role="employee" />
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <TopBar />
-        <main className="flex-1 p-6 overflow-y-auto">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
+  return <>{children}</>;
 }

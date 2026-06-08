@@ -6,17 +6,17 @@ import { TZButton } from "@/components/ui/button";
 import { TZInput } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/lib/store";
 import { useAuthContext } from "@/components/auth-provider";
 import { TZSkeleton } from "@/components/ui/skeleton";
+import { authService } from "@/services/auth";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, setAuth } = useAuthStore();
   const { loading } = useAuthContext();
 
   // If already logged in, redirect to correct dashboard
@@ -50,15 +50,19 @@ export default function AdminLoginPage() {
     
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const response = await authService.login(email, password);
 
-      if (error) throw error;
+      setAuth({
+        id: response.user.id,
+        name: response.user.name,
+        email: response.user.email,
+        phone: response.user.phone,
+        role: response.user.role as any,
+        businessName: '',
+        isFirstLogin: response.user.isFirstLogin,
+      }, response.accessToken, response.refreshToken);
 
       toast.success("Login Successful");
-      // AuthGuard will route to correct dashboard based on role
     } catch (error: any) {
       toast.error(error.message || "Login failed");
     } finally {

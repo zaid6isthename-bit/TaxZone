@@ -1,0 +1,422 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserType {
+  super_admin
+  org_admin
+  manager
+  employee
+  ca_reviewer
+  client
+}
+
+enum UserStatus {
+  invited
+  active
+  locked
+  disabled
+}
+
+enum OrgStatus {
+  trial
+  active
+  suspended
+  cancelled
+}
+
+enum ClientOnboardingStatus {
+  active
+  onboarding
+  archived
+}
+
+enum FilingStatus {
+  not_started
+  awaiting_documents
+  documents_under_review
+  in_progress
+  filed
+  completed
+  rejected
+  needs_correction
+  on_hold
+}
+
+enum DocRequestStatus {
+  requested
+  uploaded
+  pending_verification
+  approved
+  rejected
+  archived
+}
+
+enum DocVerificationStatus {
+  uploaded
+  pending_verification
+  approved
+  rejected
+  archived
+}
+
+enum TaskPriority {
+  low
+  normal
+  high
+  urgent
+}
+
+enum TaskStatus {
+  open
+  in_progress
+  blocked
+  done
+  cancelled
+}
+
+enum NotificationChannel {
+  push
+  email
+  sms
+  whatsapp
+  in_app
+}
+
+enum NotificationStatus {
+  queued
+  sent
+  failed
+  read
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  status    OrgStatus @default(active)
+  planCode  String   @default("starter") @map("plan_code")
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  users        User[]
+  roles        Role[]
+  clients      Client[]
+  employeeProfiles EmployeeProfile[]
+  filings      Filing[]
+  docRequests  DocumentRequest[]
+  documents    Document[]
+  tasks        Task[]
+  internalNotes InternalNote[]
+  notifications Notification[]
+  auditLogs    AuditLog[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String     @id @default(uuid())
+  organizationId String?    @map("organization_id")
+  email          String     @unique
+  phone          String?
+  name           String?
+  passwordHash   String?    @map("password_hash")
+  userType       UserType   @map("user_type")
+  status         UserStatus @default(active)
+  firstLoginRequired Boolean @default(true) @map("first_login_required")
+  emailVerifiedAt DateTime?  @map("email_verified_at")
+  phoneVerifiedAt DateTime?  @map("phone_verified_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  deletedAt      DateTime?  @map("deleted_at")
+
+  organization          Organization?     @relation(fields: [organizationId], references: [id])
+  clientProfile         Client?           @relation("clientUser")
+  clients               Client[]          @relation("assignedEmployee")
+  managedClients        Client[]          @relation("assignedManager")
+  reviewedFilings       Filing[]          @relation("reviewer")
+  assignedFilings       Filing[]          @relation("assignedFilingEmployee")
+  docRequests           DocumentRequest[] @relation("requestedBy")
+  uploadedDocuments     Document[]        @relation("uploadedBy")
+  tasks                 Task[]            @relation("assignedTo")
+  authoredNotes         InternalNote[]    @relation("author")
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  employeeProfile       EmployeeProfile?
+  userRoles             UserRole[]
+
+  @@map("users")
+}
+
+model Role {
+  id             String   @id @default(uuid())
+  organizationId String?  @map("organization_id")
+  name           String
+  scope          String   @default("organization")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@unique([organizationId, name])
+  @@map("roles")
+}
+
+model Permission {
+  id       String @id @default(uuid())
+  module   String
+  action   String
+  resource String
+
+  rolePermissions RolePermission[]
+
+  @@unique([module, action, resource])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String  @map("role_id")
+  permissionId String  @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Client {
+  id                String   @id @default(uuid())
+  organizationId    String   @map("organization_id")
+  userId            String?  @unique @map("user_id")
+  displayName       String   @map("display_name")
+  businessType      String   @default("individual") @map("business_type")
+  filingCategory    String   @default("gst") @map("filing_category")
+  pan               String?
+  gstin             String?
+  assignedEmployeeId String? @map("assigned_employee_id")
+  assignedManagerId String?  @map("assigned_manager_id")
+  onboardingStatus  ClientOnboardingStatus @default(active) @map("onboarding_status")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  clientUser       User?        @relation("clientUser", fields: [userId], references: [id])
+  assignedEmployee User?        @relation("assignedEmployee", fields: [assignedEmployeeId], references: [id])
+  assignedManager  User?        @relation("assignedManager", fields: [assignedManagerId], references: [id])
+  filings          Filing[]
+  docRequests      DocumentRequest[]
+  documents        Document[]
+  tasks            Task[]
+  internalNotes    InternalNote[]
+
+  @@unique([organizationId, pan])
+  @@unique([organizationId, gstin])
+  @@index([organizationId, assignedEmployeeId])
+  @@map("clients")
+}
+
+model EmployeeProfile {
+  id              String   @id @default(uuid())
+  organizationId  String   @map("organization_id")
+  userId          String   @unique @map("user_id")
+  department      String?
+  workloadLimit   Int      @default(50) @map("workload_limit")
+  skills          String[] @default([])
+  activeCaseCount Int      @default(0) @map("active_case_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([organizationId, userId])
+  @@map("employee_profiles")
+}
+
+model Filing {
+  id                 String      @id @default(uuid())
+  organizationId     String      @map("organization_id")
+  clientId           String      @map("client_id")
+  category           String
+  periodStart        DateTime    @map("period_start")
+  periodEnd          DateTime    @map("period_end")
+  dueAt              DateTime    @map("due_at")
+  status             FilingStatus @default(not_started)
+  reviewerId         String?     @map("reviewer_id")
+  assignedEmployeeId String?     @map("assigned_employee_id")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+  deletedAt          DateTime?   @map("deleted_at")
+
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  client           Client       @relation(fields: [clientId], references: [id])
+  reviewer         User?        @relation("reviewer", fields: [reviewerId], references: [id])
+  assignedEmployee User?        @relation("assignedFilingEmployee", fields: [assignedEmployeeId], references: [id])
+  docRequests      DocumentRequest[]
+  documents        Document[]
+  tasks            Task[]
+  internalNotes    InternalNote[]
+
+  @@index([organizationId, status, dueAt])
+  @@map("filings")
+}
+
+model DocumentRequest {
+  id              String         @id @default(uuid())
+  organizationId  String         @map("organization_id")
+  clientId        String         @map("client_id")
+  filingId        String?        @map("filing_id")
+  requestedById   String         @map("requested_by_id")
+  documentType    String         @map("document_type")
+  description     String?
+  dueAt           DateTime?      @map("due_at")
+  status          DocRequestStatus @default(requested)
+  rejectionReason String?        @map("rejection_reason")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  client       Client       @relation(fields: [clientId], references: [id])
+  filing       Filing?      @relation(fields: [filingId], references: [id])
+  requestedBy  User         @relation("requestedBy", fields: [requestedById], references: [id])
+  documents    Document[]
+
+  @@index([organizationId, status, dueAt])
+  @@map("document_requests")
+}
+
+model Document {
+  id                 String               @id @default(uuid())
+  organizationId     String               @map("organization_id")
+  clientId           String               @map("client_id")
+  requestId          String?              @map("request_id")
+  filingId           String?              @map("filing_id")
+  uploadedById       String               @map("uploaded_by_id")
+  storageKey         String               @map("storage_key")
+  originalFilename   String               @map("original_filename")
+  mimeType           String               @map("mime_type")
+  fileSizeBytes      BigInt               @map("file_size_bytes")
+  checksumSha256     String?              @map("checksum_sha256")
+  versionNumber      Int                  @default(1) @map("version_number")
+  verificationStatus DocVerificationStatus @default(uploaded) @map("verification_status")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  deletedAt          DateTime?            @map("deleted_at")
+
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  client       Client           @relation(fields: [clientId], references: [id])
+  request      DocumentRequest? @relation(fields: [requestId], references: [id])
+  filing       Filing?          @relation(fields: [filingId], references: [id])
+  uploadedBy   User             @relation("uploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([organizationId, clientId])
+  @@map("documents")
+}
+
+model Task {
+  id             String     @id @default(uuid())
+  organizationId String     @map("organization_id")
+  clientId       String?    @map("client_id")
+  filingId       String?    @map("filing_id")
+  title          String
+  description    String?
+  assignedToId   String     @map("assigned_to_id")
+  createdById    String?    @map("created_by_id")
+  priority       TaskPriority @default(normal)
+  status         TaskStatus @default(open)
+  dueAt          DateTime?  @map("due_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  client       Client?      @relation(fields: [clientId], references: [id])
+  filing       Filing?      @relation(fields: [filingId], references: [id])
+  assignedTo   User         @relation("assignedTo", fields: [assignedToId], references: [id])
+
+  @@index([organizationId, assignedToId, status])
+  @@map("tasks")
+}
+
+model InternalNote {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  clientId       String?  @map("client_id")
+  filingId       String?  @map("filing_id")
+  authorId       String   @map("author_id")
+  parentNoteId   String?  @map("parent_note_id")
+  body           String
+  priority       String   @default("normal")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  client       Client?       @relation(fields: [clientId], references: [id])
+  filing       Filing?       @relation(fields: [filingId], references: [id])
+  author       User          @relation("author", fields: [authorId], references: [id])
+  parentNote   InternalNote? @relation("InternalNoteToInternalNote", fields: [parentNoteId], references: [id])
+  childNotes   InternalNote[] @relation("InternalNoteToInternalNote")
+
+  @@map("internal_notes")
+}
+
+model Notification {
+  id                String             @id @default(uuid())
+  organizationId    String             @map("organization_id")
+  recipientId       String             @map("recipient_id")
+  channel           NotificationChannel @default(in_app)
+  eventType         String             @map("event_type")
+  title             String
+  body              String
+  status            NotificationStatus @default(queued)
+  providerMessageId String?            @map("provider_message_id")
+  retryCount        Int                @default(0) @map("retry_count")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  sentAt            DateTime?          @map("sent_at")
+  readAt            DateTime?          @map("read_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  recipient    User         @relation(fields: [recipientId], references: [id])
+
+  @@index([organizationId, recipientId, status])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String?  @map("organization_id")
+  actorUserId    String?  @map("actor_user_id")
+  actionType     String   @map("action_type")
+  entityType     String   @map("entity_type")
+  entityId       String?  @map("entity_id")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  actor        User?         @relation(fields: [actorUserId], references: [id])
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}

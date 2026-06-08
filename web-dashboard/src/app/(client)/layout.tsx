@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
+import { useAuthContext } from "@/components/auth-provider";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { TZSkeleton } from "@/components/ui/skeleton";
-import { useAuthContext } from "@/components/auth-provider";
 
-export default function ClientLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
   const { loading } = useAuthContext();
 
@@ -21,7 +19,7 @@ export default function ClientLayout({
     } else if (user?.role && user.role !== 'client') {
       if (user.role === 'org_admin' || user.role === 'super_admin') {
         router.replace('/admin');
-      } else {
+      } else if (user.role === 'employee' || user.role === 'ca_reviewer') {
         router.replace('/employee');
       }
     }
@@ -37,11 +35,11 @@ export default function ClientLayout({
   }
 
   return (
-    <>
-      <main className="w-full min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50 pb-20">
+      <main className="flex-1 px-4 pt-4 pb-4">
         {children}
       </main>
       <BottomNav />
-    </>
+    </div>
   );
 }
