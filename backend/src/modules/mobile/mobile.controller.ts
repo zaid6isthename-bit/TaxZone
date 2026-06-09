@@ -38,12 +38,12 @@ export class MobileController {
     });
 
     const totalFilings = filings.length;
-    const completedFilings = filings.filter(f => f.status === 'completed' || f.status === 'filed').length;
+    const completedFilings = filings.filter((f: any) => f.status === 'completed' || f.status === 'filed').length;
     const filingProgress = totalFilings > 0 ? Math.round((completedFilings / totalFilings) * 100) : 0;
 
     const actions = filings
-      .filter(f => f.status !== 'completed' && f.status !== 'filed')
-      .map(f => ({
+      .filter((f: any) => f.status !== 'completed' && f.status !== 'filed')
+      .map((f: any) => ({
         id: f.id,
         title: `${f.category} filing`,
         description: `Due ${f.dueAt.toLocaleDateString()}`,
@@ -77,7 +77,7 @@ export class MobileController {
     });
 
     return {
-      documents: requests.map(r => ({
+      documents: requests.map((r: any) => ({
         id: r.id,
         name: r.documentType,
         status: r.status === 'approved' ? 'Approved' : r.status === 'rejected' ? 'Rejected' : r.status === 'uploaded' ? 'Uploaded' : 'Pending upload',
@@ -132,11 +132,11 @@ export class MobileController {
     });
 
     return {
-      filings: filings.map(f => ({
+      filings: filings.map((f: any) => ({
         heading: f.category,
         description: `${f.periodStart.toLocaleDateString()} - ${f.periodEnd.toLocaleDateString()}`,
         stages: [
-          { title: 'Documents uploaded', status: f.docRequests.every(dr => dr.status === 'approved') ? 'Complete' : 'Pending', complete: f.docRequests.every(dr => dr.status === 'approved') },
+          { title: 'Documents uploaded', status: f.docRequests.every((dr: any) => dr.status === 'approved') ? 'Complete' : 'Pending', complete: f.docRequests.every((dr: any) => dr.status === 'approved') },
           { title: 'Under Review', status: f.status === 'documents_under_review' || f.status === 'in_progress' ? 'In Progress' : 'Pending', complete: f.status === 'completed' || f.status === 'filed' },
           { title: 'Filed', status: f.status === 'filed' || f.status === 'completed' ? 'Complete' : 'Pending', complete: f.status === 'completed' },
         ],
@@ -153,7 +153,7 @@ export class MobileController {
     });
 
     return {
-      notifications: notifications.map(n => ({
+      notifications: notifications.map((n: any) => ({
         id: n.id,
         title: n.title,
         body: n.body,

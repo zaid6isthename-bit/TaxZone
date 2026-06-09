@@ -70,7 +70,7 @@ export class EmployeesService {
       this.prisma.user.count({ where }),
     ]);
 
-    const sanitized = data.map(({ passwordHash, ...rest }) => rest);
+    const sanitized = data.map(({ passwordHash, ...rest }: { passwordHash?: string }) => rest);
     return { data: sanitized, meta: { page, limit, total } };
   }
 

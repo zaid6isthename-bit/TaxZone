@@ -42,8 +42,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    const permissions = user.userRoles.flatMap((ur) =>
-      ur.role.rolePermissions.map((rp) => `${rp.permission.module}:${rp.permission.action}`),
+    const permissions = user.userRoles.flatMap((ur: any) =>
+      ur.role.rolePermissions.map((rp: any) => `${rp.permission.module}:${rp.permission.action}`),
     );
 
     return {
@@ -54,7 +54,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       name: user.name,
       status: user.status,
       permissions,
-      roles: user.userRoles.map((ur) => ur.role.name),
+      roles: user.userRoles.map((ur: any) => ur.role.name),
     };
   }
 }
