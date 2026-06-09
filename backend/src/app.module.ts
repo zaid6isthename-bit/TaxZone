@@ -12,6 +12,7 @@ import { WorkflowModule } from './modules/workflow/workflow.module';
 import { SearchModule } from './modules/search/search.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { MobileModule } from './modules/mobile/mobile.module';
+import { SupabaseModule } from './modules/supabase/supabase.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/roles.guard';
@@ -31,6 +32,7 @@ import { RolesGuard } from './modules/auth/roles.guard';
     SearchModule,
     EmployeesModule,
     MobileModule,
+    SupabaseModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
