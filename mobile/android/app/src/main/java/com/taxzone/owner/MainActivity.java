@@ -22,6 +22,8 @@ import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.concurrent.Executors;
+
 public class MainActivity extends Activity {
     private static final int PICK_DOCUMENT = 9001;
     private final int blue = Color.rgb(67, 56, 202);
@@ -35,13 +37,38 @@ public class MainActivity extends Activity {
     private SharedPreferences prefs;
     private JSONObject state = new JSONObject();
     private String pendingUploadDocumentId;
+    private boolean notificationsSubscribed = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         prefs = getSharedPreferences("taxzone", MODE_PRIVATE);
+        String existingToken = prefs.getString("authToken", "");
+        if (!existingToken.isEmpty()) {
+            subscribeToRealtimeNotifications(existingToken);
+        }
         renderLoading("Connecting to TaxZone");
         loadScreen("Dashboard");
+    }
+
+    private void subscribeToRealtimeNotifications(String token) {
+        if (notificationsSubscribed || token == null || token.isEmpty()) return;
+        try {
+            String payload = new String(android.util.Base64.decode(token.split("\\.")[1], android.util.Base64.URL_SAFE));
+            JSONObject claims = new JSONObject(payload);
+            String userId = claims.optString("sub");
+            if (userId.isEmpty()) return;
+
+            SupabaseModule.INSTANCE.subscribeToNotifications(userId, data -> {
+                runOnUiThread(() -> {
+                    int current = prefs.getInt("unreadBadge", 0);
+                    prefs.edit().putInt("unreadBadge", current + 1).apply();
+                    Toast.makeText(this, "New notification received", Toast.LENGTH_SHORT).show();
+                    if ("Alerts".equals(screen)) loadScreen(screen);
+                });
+            });
+            notificationsSubscribed = true;
+        } catch (Exception ignored) {}
     }
 
     @Override
@@ -189,6 +216,8 @@ public class MainActivity extends Activity {
         Button save = button("Save and refresh");
         save.setOnClickListener(v -> {
             prefs.edit().putString("apiBaseUrl", baseUrl.getText().toString()).putString("authToken", token.getText().toString()).apply();
+            notificationsSubscribed = false;
+            subscribeToRealtimeNotifications(token.getText().toString());
             loadScreen("Dashboard");
         });
         box.addView(save);

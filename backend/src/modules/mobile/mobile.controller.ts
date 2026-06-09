@@ -1,22 +1,38 @@
-import { Controller, Get, Post, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, NotFoundException, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { CurrentUser } from '../../common/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Controller('mobile')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MobileController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private supabase: SupabaseService,
+  ) {}
+
+  private async resolveClient(userId: string) {
+    const client = await this.prisma.client.findFirst({
+      where: { userId, deletedAt: null },
+    });
+    if (!client) {
+      throw new NotFoundException('Client profile not found');
+    }
+    return client;
+  }
 
   @Get('dashboard')
   async getDashboard(@CurrentUser() user: any) {
+    const client = await this.resolveClient(user.id);
+
     const pendingDocs = await this.prisma.documentRequest.count({
-      where: { clientId: user.id, status: 'requested' },
+      where: { clientId: client.id, status: 'requested', deletedAt: null },
     });
 
     const filings = await this.prisma.filing.findMany({
-      where: { clientId: user.id, deletedAt: null },
+      where: { clientId: client.id, deletedAt: null },
       orderBy: { dueAt: 'asc' },
       take: 5,
     });
@@ -50,8 +66,10 @@ export class MobileController {
 
   @Get('documents')
   async getDocuments(@CurrentUser() user: any) {
+    const client = await this.resolveClient(user.id);
+
     const requests = await this.prisma.documentRequest.findMany({
-      where: { clientId: user.id, deletedAt: null },
+      where: { clientId: client.id, deletedAt: null },
       orderBy: { createdAt: 'desc' },
       include: {
         documents: { where: { deletedAt: null } },
@@ -70,17 +88,40 @@ export class MobileController {
 
   @Post('documents/:id/upload-intent')
   async uploadIntent(@Param('id') id: string, @CurrentUser() user: any) {
+    const client = await this.resolveClient(user.id);
+
+    const request = await this.prisma.documentRequest.findFirst({
+      where: { id, clientId: client.id, deletedAt: null },
+    });
+    if (!request) {
+      throw new NotFoundException('Document request not found');
+    }
+
+    const storagePath = `${user.organizationId || 'none'}/clients/${client.id}/requests/${id}/${Date.now()}`;
+
+    let signedUploadUrl: string | null = null;
+    try {
+      const { data, error } = await this.supabase.storage
+        .from('taxzone-documents')
+        .createSignedUploadUrl(storagePath);
+      if (data && !error) signedUploadUrl = data.signedUrl;
+    } catch {}
+
     return {
       documentId: id,
       uploadUrl: `${process.env.PUBLIC_API_BASE_URL || 'http://localhost:4000'}/api/v1/documents/requests/${id}/upload`,
+      supabaseUploadUrl: signedUploadUrl,
+      supabaseStoragePath: storagePath,
       expiresIn: 3600,
     };
   }
 
   @Get('filings')
   async getFilings(@CurrentUser() user: any) {
+    const client = await this.resolveClient(user.id);
+
     const filings = await this.prisma.filing.findMany({
-      where: { clientId: user.id, deletedAt: null },
+      where: { clientId: client.id, deletedAt: null },
       orderBy: { dueAt: 'asc' },
       include: {
         docRequests: {
@@ -133,7 +174,7 @@ export class MobileController {
   @Get('profile')
   async getProfile(@CurrentUser() user: any) {
     const client = await this.prisma.client.findFirst({
-      where: { userId: user.id },
+      where: { userId: user.id, deletedAt: null },
     });
 
     return {
