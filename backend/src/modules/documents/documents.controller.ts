@@ -70,6 +70,11 @@ export class DocumentsController {
     return this.documentsService.verify(user.organizationId, id, dto, user.id);
   }
 
+  @Get(':id/download-url')
+  async getDownloadUrl(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.documentsService.getDownloadUrl(user.organizationId, id);
+  }
+
   @Get()
   async listDocuments(
     @CurrentUser() user: any,

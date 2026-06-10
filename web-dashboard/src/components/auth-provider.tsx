@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, createContext, useContext } from "react";
-import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/lib/store";
 import { TZSkeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
@@ -14,91 +13,20 @@ const AuthContext = createContext<AuthContextType>({ loading: true });
 export const useAuthContext = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setAuth, logout, accessToken, isAuthenticated } = useAuthStore();
+  const { accessToken, isAuthenticated } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
 
   useEffect(() => {
     mountedRef.current = true;
 
-    async function initializeAuth() {
-      try {
-        // Check if we already have a token from backend auth (admin/employee login)
-        if (accessToken && isAuthenticated) {
-          if (mountedRef.current) setLoading(false);
-          return;
-        }
-
-        // Check for Supabase session (client login via OTP)
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session) {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          if (profile && mountedRef.current) {
-            setAuth({
-              id: profile.id,
-              name: profile.name,
-              email: profile.email,
-              phone: profile.phone,
-              role: profile.role,
-              businessName: profile.business_name,
-              gstin: profile.gstin,
-              avatar: profile.avatar_url,
-              isFirstLogin: false
-            }, session.access_token, session.refresh_token);
-          } else {
-            if (mountedRef.current) logout();
-          }
-        } else {
-          // If no tokens at all, set loading to false (user may be on login page)
-          if (mountedRef.current) setLoading(false);
-        }
-      } catch (error) {
-        console.error("Auth init error:", error);
-        if (mountedRef.current) setLoading(false);
-      } finally {
-        if (mountedRef.current) setLoading(false);
-      }
-    }
-
-    initializeAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        const { data: profile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profile && mountedRef.current) {
-          setAuth({
-            id: profile.id,
-            name: profile.name,
-            email: profile.email,
-            phone: profile.phone,
-            role: profile.role,
-            businessName: profile.business_name,
-            gstin: profile.gstin,
-            avatar: profile.avatar_url,
-            isFirstLogin: false
-          }, session.access_token, session.refresh_token);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        if (mountedRef.current) logout();
-      }
-    });
+    // Auth state is persisted in localStorage via Zustand.
+    // If tokens exist, the user is already authenticated.
+    if (mountedRef.current) setLoading(false);
 
     return () => {
       mountedRef.current = false;
-      subscription.unsubscribe();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) {

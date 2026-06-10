@@ -4,15 +4,17 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { CreateDocumentRequestDto, VerifyDocumentDto } from './dto/create-request.dto';
 import { assertDocumentTransition } from './document-lifecycle';
-import * as fs from 'fs';
-import * as path from 'path';
 import { randomUUID } from 'crypto';
 
 @Injectable()
 export class DocumentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private supabase: SupabaseService,
+  ) {}
 
   async createRequest(dto: CreateDocumentRequestDto, orgId: string, actorId: string) {
     const request = await this.prisma.documentRequest.create({
@@ -102,10 +104,19 @@ export class DocumentsService {
     });
     if (!request) throw new NotFoundException('Document request not found');
 
-    const storageKey = `${orgId}/${request.clientId}/${randomUUID()}${path.extname(file.originalname)}`;
-    const uploadDir = path.join(process.cwd(), 'uploads', orgId, request.clientId);
-    fs.mkdirSync(uploadDir, { recursive: true });
-    fs.writeFileSync(path.join(uploadDir, path.basename(storageKey)), file.buffer);
+    const fileExt = file.originalname.split('.').pop();
+    const storageKey = `${orgId}/${request.clientId}/${randomUUID()}.${fileExt}`;
+
+    const { error: uploadError } = await this.supabase.storage
+      .from(process.env.SUPABASE_STORAGE_BUCKET || 'taxzone-documents')
+      .upload(storageKey, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new BadRequestException('File upload failed: ' + uploadError.message);
+    }
 
     const doc = await this.prisma.document.create({
       data: {
@@ -241,5 +252,22 @@ export class DocumentsService {
     ]);
 
     return { data, meta: { page, limit, total } };
+  }
+
+  async getDownloadUrl(orgId: string, docId: string) {
+    const doc = await this.prisma.document.findFirst({
+      where: { id: docId, organizationId: orgId, deletedAt: null },
+    });
+    if (!doc) throw new NotFoundException('Document not found');
+
+    const { data, error } = await this.supabase.storage
+      .from(process.env.SUPABASE_STORAGE_BUCKET || 'taxzone-documents')
+      .createSignedUrl(doc.storageKey, 3600);
+
+    if (error) {
+      throw new BadRequestException('Failed to generate download URL');
+    }
+
+    return { downloadUrl: data.signedUrl, expiresIn: 3600 };
   }
 }

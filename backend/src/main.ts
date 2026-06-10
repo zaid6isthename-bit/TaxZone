@@ -6,8 +6,12 @@ import { ResponseInterceptor } from './common/response.interceptor';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',')
+    : ['http://localhost:3000', 'http://localhost:3001'];
+
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'https://taxzone-web.vercel.app'],
+    origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-App-Platform', 'X-App-Version'],

@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { supabase } from './supabase';
 
 export interface User {
   id: string;
@@ -39,7 +38,6 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, accessToken, refreshToken) =>
         set({ user, accessToken, refreshToken, isAuthenticated: true }),
       logout: () => {
-        supabase.auth.signOut();
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
       },
       setUnreadCount: (unreadCount) => set({ unreadCount }),

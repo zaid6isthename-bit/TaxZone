@@ -14,11 +14,11 @@ function OTPForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const phone = searchParams?.get("phone") || "";
+  const email = searchParams?.get("email") || "";
 
   useEffect(() => {
-    if (!phone) router.replace("/login/client");
-  }, [phone, router]);
+    if (!email) router.replace("/login/client");
+  }, [email, router]);
 
   const handleVerifyOTP = async () => {
     const otpString = otp.join("");
@@ -30,9 +30,9 @@ function OTPForm() {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.verifyOtp({
-        phone,
+        email,
         token: otpString,
-        type: "sms",
+        type: "email",
       });
 
       if (error) throw error;
@@ -72,7 +72,7 @@ function OTPForm() {
           <ShieldCheck size={36} className="text-brand-primary" />
         </div>
         <h2 className="text-2xl font-bold font-display text-gray-900 leading-tight">Verify Device</h2>
-        <p className="text-sm text-gray-500 font-body mt-2">6-digit code sent to <span className="font-bold text-gray-900">{phone}</span></p>
+        <p className="text-sm text-gray-500 font-body mt-2">6-digit code sent to <span className="font-bold text-gray-900">{email}</span></p>
       </div>
 
       <div className="flex gap-2.5 justify-center">

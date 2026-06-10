@@ -6,43 +6,46 @@ import { TZButton } from "@/components/ui/button";
 import { TZInput } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { supabase } from "@/lib/supabase";
+import { authService } from "@/services/auth";
+import { useAuthStore } from "@/lib/store";
 
 export default function ClientSignupPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { setAuth } = useAuthStore();
 
   const handleSignup = async () => {
-    if (!name || phone.length !== 10) {
-      toast.error("Please enter your name and valid phone number");
+    if (!name || !email || !password) {
+      toast.error("Please enter your name, email, and password");
       return;
     }
     
     setIsLoading(true);
     try {
-      // For phone-based signups in Supabase, we send an OTP to verify the phone.
-      // The user record will be created when they verify the OTP.
-      // We pass the name/email in the user metadata so our trigger can populate public.users
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: "+91" + phone,
-        options: {
-          data: {
-            name,
-            email: email || undefined,
-            role: 'client'
-          }
-        }
+      const response = await authService.register({
+        email,
+        password,
+        name,
+        phone: phone ? "+91" + phone : undefined,
       });
 
-      if (error) throw error;
+      setAuth({
+        id: response.user.id,
+        name: response.user.name,
+        email: response.user.email,
+        phone: response.user.phone,
+        role: response.user.role as any,
+        isFirstLogin: response.user.isFirstLogin,
+      }, response.accessToken, response.refreshToken);
 
-      toast.success("Verification code sent to +91 " + phone);
-      router.push(`/login/client/otp?phone=${encodeURIComponent("+91" + phone)}`);
+      toast.success("Account created successfully");
+      router.push("/");
     } catch (error: any) {
-      toast.error(error.message || "Failed to start registration");
+      toast.error(error.message || "Failed to register");
     } finally {
       setIsLoading(false);
     }
@@ -74,10 +77,24 @@ export default function ClientSignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
+              <TZInput 
+                placeholder="Email Address" 
+                type="email" 
+                className="h-14 rounded-2xl text-base" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <TZInput 
+                placeholder="Password" 
+                type="password" 
+                className="h-14 rounded-2xl text-base" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
               <div className="flex gap-4">
                 <div className="w-24 h-14 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-base font-bold text-gray-600 shadow-inner">+91</div>
                 <TZInput 
-                  placeholder="Mobile Number" 
+                  placeholder="Mobile Number (optional)" 
                   type="tel" 
                   className="flex-1 h-14 rounded-2xl text-base" 
                   maxLength={10} 
@@ -85,13 +102,6 @@ export default function ClientSignupPage() {
                   onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
                 />
               </div>
-              <TZInput 
-                placeholder="Email Address (optional)" 
-                type="email" 
-                className="h-14 rounded-2xl text-base" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
               
               <div className="p-5 rounded-2xl bg-[#F0F9FF] border border-brand-primary/10 flex gap-4 items-start mt-2">
                 <div className="w-6 h-6 rounded-full bg-brand-primary/10 flex items-center justify-center shrink-0 mt-0.5">

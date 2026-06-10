@@ -1,24 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Smartphone, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Mail, Lock } from "lucide-react";
 import { TZButton } from "@/components/ui/button";
 import { TZInput } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/lib/store";
 import { useAuthContext } from "@/components/auth-provider";
 import { TZSkeleton } from "@/components/ui/skeleton";
+import { authService } from "@/services/auth";
 
 export default function ClientLoginPage() {
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, setAuth } = useAuthStore();
   const { loading } = useAuthContext();
 
-  // If already logged in, redirect to correct dashboard
   useEffect(() => {
     if (loading) return;
     if (isAuthenticated) {
@@ -41,24 +41,28 @@ export default function ClientLoginPage() {
     );
   }
 
-  const handleSendOTP = async () => {
-    if (phone.length !== 10) {
-      toast.error("Please enter a valid 10-digit number");
+  const handleLogin = async () => {
+    if (!email || !password) {
+      toast.error("Please enter email and password");
       return;
     }
     
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: "+91" + phone,
-      });
+      const response = await authService.login(email, password);
 
-      if (error) throw error;
+      setAuth({
+        id: response.user.id,
+        name: response.user.name,
+        email: response.user.email,
+        phone: response.user.phone,
+        role: response.user.role as any,
+        isFirstLogin: response.user.isFirstLogin,
+      }, response.accessToken, response.refreshToken);
 
-      toast.success("OTP sent to +91 " + phone);
-      router.push(`/login/client/otp?phone=${encodeURIComponent("+91" + phone)}`);
+      toast.success("Login Successful");
     } catch (error: any) {
-      toast.error(error.message || "Failed to send OTP");
+      toast.error(error.message || "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -85,27 +89,34 @@ export default function ClientLoginPage() {
           <div className="space-y-8 animate-fade-in">
             <div>
               <h2 className="text-3xl font-bold font-display text-gray-900 tracking-tight">Welcome Back</h2>
-              <p className="text-sm text-gray-500 font-body mt-2">Enter your phone number to login or register.</p>
+              <p className="text-sm text-gray-500 font-body mt-2">Enter your email and password to login.</p>
             </div>
             
-            <div className="flex gap-4">
-              <div className="w-24 h-14 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-base font-bold text-gray-600 shadow-inner">+91</div>
+            <div className="space-y-4">
               <TZInput
-                placeholder="Mobile Number"
-                type="tel"
-                className="flex-1 h-14 text-lg font-bold tracking-widest rounded-2xl"
-                maxLength={10}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="Email Address"
+                type="email"
+                icon={<Mail size={20} />}
+                className="h-14 rounded-2xl text-base"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <TZInput
+                placeholder="Password"
+                type="password"
+                icon={<Lock size={20} />}
+                className="h-14 rounded-2xl text-base"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             
             <TZButton 
-              onClick={handleSendOTP} 
+              onClick={handleLogin} 
               loading={isLoading} 
               className="w-full h-16 rounded-2xl text-lg font-bold shadow-2xl shadow-brand-primary/20"
             >
-              Continue with Phone
+              Sign In
             </TZButton>
 
             <div className="pt-4 flex justify-between border-t border-gray-50">
